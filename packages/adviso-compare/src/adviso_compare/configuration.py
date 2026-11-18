@@ -390,9 +390,7 @@ def _validate_schema(
         missing = sorted(set(error.validator_value) - set(error.instance))
         if missing:
             path_components.append(missing[0])
-    elif error.validator == "additionalProperties" and isinstance(
-        error.instance, dict
-    ):
+    elif error.validator == "additionalProperties" and isinstance(error.instance, dict):
         permitted = set(error.schema.get("properties", {}))
         extras = sorted(set(error.instance) - permitted)
         if extras:
@@ -636,8 +634,7 @@ def _validate_collection_mappings(path: str, field: JsonObject) -> None:
         seen: set[tuple[str, object]] = set()
         for index, entry in enumerate(representation.get("element_mapping", [])):
             entry_path = (
-                f"{path}.collection_representation.{side}.element_mapping"
-                f"[{index}].from"
+                f"{path}.collection_representation.{side}.element_mapping[{index}].from"
             )
             key = _descriptor_key(entry["from"], operations)
             if key in seen:
@@ -751,8 +748,7 @@ def _build_field(name: str, field: JsonObject) -> FieldDefinition:
                 for item in source_normalisation.get("reference", [])
             ),
             query=tuple(
-                _build_operation(item)
-                for item in source_normalisation.get("query", [])
+                _build_operation(item) for item in source_normalisation.get("query", [])
             ),
         ),
         collection_representation=collection_representation,
@@ -819,8 +815,7 @@ def _build_collection_representation(
         format=document["format"],
         delimiter=document.get("delimiter"),
         element_normalisation=tuple(
-            _build_operation(item)
-            for item in document.get("element_normalisation", [])
+            _build_operation(item) for item in document.get("element_normalisation", [])
         ),
         element_mapping=tuple(
             _build_mapping(item) for item in document.get("element_mapping", [])

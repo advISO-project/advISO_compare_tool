@@ -37,7 +37,8 @@ RESULTS_SCHEMA_ID = (
         (RESULTS_SCHEMA_FILE, RESULTS_SCHEMA_ID),
     ],
     ids=[
-        "configuration", "results",
+        "configuration",
+        "results",
     ],
 )
 def test_authoritative_schemas_are_packaged_valid_draft_2020_12_documents(
@@ -63,9 +64,17 @@ def test_representative_documents_validate_independently_with_format_assertion(
     assert configuration["schema_version"] == "1.0"
     assert result["schema_version"] == "1.0"
     assert set(result) == {
-        "schema_version", "run", "phases", "software", "runtime", "inputs",
-        "record_key_fields", "comparison_configuration_digest", "summary",
-        "exclusions", "findings",
+        "schema_version",
+        "run",
+        "phases",
+        "software",
+        "runtime",
+        "inputs",
+        "record_key_fields",
+        "comparison_configuration_digest",
+        "summary",
+        "exclusions",
+        "findings",
     }
     for filename, document in (
         (CONFIGURATION_SCHEMA_FILE, configuration),
@@ -117,14 +126,8 @@ def _references(value: Any) -> list[str]:
         return [reference for item in value for reference in _references(item)]
     if isinstance(value, dict):
         return [
-            item
-            for key, item in value.items()
-            if key in {"$ref", "$dynamicRef"}
-        ] + [
-            reference
-            for item in value.values()
-            for reference in _references(item)
-        ]
+            item for key, item in value.items() if key in {"$ref", "$dynamicRef"}
+        ] + [reference for item in value.values() for reference in _references(item)]
     return []
 
 
@@ -135,11 +138,13 @@ def _references(value: Any) -> list[str]:
         ("results", RESULTS_SCHEMA_FILE),
     ],
     ids=[
-        "configuration-family", "results-family",
+        "configuration-family",
+        "results-family",
     ],
 )
 def test_schema_lookup_selects_the_document_family_and_version(
-    family: str, filename: str,
+    family: str,
+    filename: str,
 ) -> None:
     """Equal version strings select different schemas in different families."""
     assert load_schema(family, "1.0") == load_packaged_schema(filename)
@@ -149,12 +154,14 @@ def test_schema_lookup_selects_the_document_family_and_version(
     ("family", "version"),
     [("configuration", "2.0"), ("results", "2.0"), ("unknown", "1.0")],
     ids=[
-        "unknown-configuration-version", "unknown-results-version",
+        "unknown-configuration-version",
+        "unknown-results-version",
         "unknown-family",
     ],
 )
 def test_schema_lookup_rejects_unknown_families_and_versions(
-    family: str, version: str,
+    family: str,
+    version: str,
 ) -> None:
     """Unrecognized selectors never become filenames or network references."""
     with pytest.raises(ValueError):
@@ -163,14 +170,18 @@ def test_schema_lookup_rejects_unknown_families_and_versions(
 
 @pytest.mark.parametrize("family", ["configuration", "results"])
 @pytest.mark.parametrize(
-    'version', [None, "2.0", 1.0, ""],
+    "version",
+    [None, "2.0", 1.0, ""],
     ids=[
-        "missing-version", "unsupported-version", "numeric-version",
+        "missing-version",
+        "unsupported-version",
+        "numeric-version",
         "empty-version",
     ],
 )
 def test_each_document_requires_its_own_supported_root_version(
-    family: str, version: object,
+    family: str,
+    version: object,
 ) -> None:
     """The format discriminator is required and has its specified string value."""
     if family == "configuration":
@@ -192,9 +203,7 @@ def test_each_document_requires_its_own_supported_root_version(
     [
         lambda document: document.pop("comparison_configuration_digest"),
         lambda document: document.update(unexpected={}),
-        lambda document: document["comparison_configuration_digest"].pop(
-            "algorithm"
-        ),
+        lambda document: document["comparison_configuration_digest"].pop("algorithm"),
         lambda document: document["comparison_configuration_digest"].pop("value"),
         lambda document: document["comparison_configuration_digest"].update(
             algorithm="sha512"
@@ -204,8 +213,12 @@ def test_each_document_requires_its_own_supported_root_version(
         ),
     ],
     ids=[
-        "missing-digest", "unknown-root-property", "missing-algorithm",
-        "missing-value", "unsupported-algorithm", "unknown-digest-property",
+        "missing-digest",
+        "unknown-root-property",
+        "missing-algorithm",
+        "missing-value",
+        "unsupported-algorithm",
+        "unknown-digest-property",
     ],
 )
 def test_configuration_digest_has_exact_required_properties(mutation: Any) -> None:
@@ -229,7 +242,8 @@ def test_configuration_digest_has_exact_required_properties(mutation: Any) -> No
     ],
 )
 def test_sha256_digests_require_exact_lowercase_hexadecimal_text(
-    digest_field: str, value: object,
+    digest_field: str,
+    value: object,
 ) -> None:
     """Exercise shared digest constraints and their use in input provenance."""
     document = minimal_result()

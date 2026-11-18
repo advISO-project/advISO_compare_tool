@@ -24,9 +24,7 @@ def assert_run_package(parent: Path, child: Path | None = None) -> Path:
         "comparison-report.html",
         "comparison-results.json",
     ]
-    result = json.loads(
-        (child / "comparison-results.json").read_text(encoding="utf-8")
-    )
+    result = json.loads((child / "comparison-results.json").read_text(encoding="utf-8"))
     results_validator().validate(result)
     configuration_path = child / "comparison-configuration.json"
     assert not configuration_path.is_symlink()

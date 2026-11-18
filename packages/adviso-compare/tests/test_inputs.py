@@ -39,7 +39,8 @@ def _write_bytes(path: Path, content: bytes) -> Path:
         ("reference.JsOn", b'[{"record_id":"S1","value":"alpha"}]', InputFormat.JSON),
     ],
     ids=[
-        "uppercase-csv-extension", "mixed-case-tsv-extension",
+        "uppercase-csv-extension",
+        "mixed-case-tsv-extension",
         "mixed-case-json-extension",
     ],
 )
@@ -66,7 +67,8 @@ def test_format_and_exact_byte_provenance_are_discovered_independently(
     ("suffix", "delimiter"),
     [("csv", ","), ("tsv", "\t")],
     ids=[
-        "csv", "tsv",
+        "csv",
+        "tsv",
     ],
 )
 def test_fixed_tabular_dialects_preserve_strings_and_record_locations(
@@ -76,7 +78,7 @@ def test_fixed_tabular_dialects_preserve_strings_and_record_locations(
 ) -> None:
     """Quoted syntax, multiline cells, and physical locations follow one dialect."""
     content = (
-        f'record_id{delimiter}result{delimiter}note\r\n'
+        f"record_id{delimiter}result{delimiter}note\r\n"
         f'S1{delimiter}"a{delimiter}b"{delimiter}"first\r\nsecond"\r\n'
         f'S2{delimiter}"""quoted"""{delimiter}\r\n'
     ).encode()
@@ -106,9 +108,7 @@ def test_lf_and_crlf_inputs_have_equal_records_but_distinct_byte_provenance(
 ) -> None:
     """Accepted line-ending variants preserve parsed content, not byte evidence."""
     lf_path = _write_bytes(tmp_path / "lf.csv", b"record_id,value\nS1,alpha\n")
-    crlf_path = _write_bytes(
-        tmp_path / "crlf.csv", b"record_id,value\r\nS1,alpha\r\n"
-    )
+    crlf_path = _write_bytes(tmp_path / "crlf.csv", b"record_id,value\r\nS1,alpha\r\n")
 
     lf_dataset = load_dataset(lf_path, InputSide.REFERENCE)
     crlf_dataset = load_dataset(crlf_path, InputSide.REFERENCE)
@@ -162,9 +162,7 @@ def test_json_preserves_native_categories_lexical_numbers_and_pointers(
     assert record.has_field("nothing")
     assert not record.has_field("missing")
     assert record.location_for("missing") == record.location
-    assert record.value("quoted_nonfinite") == NativeValue(
-        NativeCategory.STRING, "NaN"
-    )
+    assert record.value("quoted_nonfinite") == NativeValue(NativeCategory.STRING, "NaN")
     assert record.value("array").category is NativeCategory.ARRAY
     assert record.value("array").value[0].category is NativeCategory.INTEGER
     assert record.value("object").category is NativeCategory.OBJECT
@@ -233,7 +231,9 @@ def test_parser_native_equality_is_recursive_and_category_preserving(
         ("empty.tsv", b"record_id\tvalue\n", ("record_id", "value")),
     ],
     ids=[
-        "empty-json-array", "csv-header-only", "tsv-header-only",
+        "empty-json-array",
+        "csv-header-only",
+        "tsv-header-only",
     ],
 )
 def test_structurally_valid_empty_datasets_remain_valid(
@@ -252,9 +252,11 @@ def test_structurally_valid_empty_datasets_remain_valid(
 
 
 @pytest.mark.parametrize(
-    ("suffix", "delimiter"), [("csv", ","), ("tsv", "\t")],
+    ("suffix", "delimiter"),
+    [("csv", ","), ("tsv", "\t")],
     ids=[
-        "csv", "tsv",
+        "csv",
+        "tsv",
     ],
 )
 @pytest.mark.parametrize(
@@ -267,8 +269,10 @@ def test_structurally_valid_empty_datasets_remain_valid(
         ("bare\rcarriage-return", 2),
     ],
     ids=[
-        "unterminated-quote", "quote-in-unquoted-field",
-        "text-after-closing-quote", "backslash-escape",
+        "unterminated-quote",
+        "quote-in-unquoted-field",
+        "text-after-closing-quote",
+        "backslash-escape",
         "bare-carriage-return",
     ],
 )
@@ -291,9 +295,11 @@ def test_malformed_tabular_quote_and_line_syntax_is_rejected_for_each_dialect(
 
 
 @pytest.mark.parametrize(
-    ("suffix", "delimiter"), [("csv", ","), ("tsv", "\t")],
+    ("suffix", "delimiter"),
+    [("csv", ","), ("tsv", "\t")],
     ids=[
-        "csv", "tsv",
+        "csv",
+        "tsv",
     ],
 )
 @pytest.mark.parametrize(
@@ -306,8 +312,11 @@ def test_malformed_tabular_quote_and_line_syntax_is_rejected_for_each_dialect(
         ("field{d}other\n\n", "has 0 fields; expected 2"),
     ],
     ids=[
-        "duplicate-header", "empty-header", "too-few-columns",
-        "too-many-columns", "blank-record",
+        "duplicate-header",
+        "empty-header",
+        "too-few-columns",
+        "too-many-columns",
+        "blank-record",
     ],
 )
 def test_invalid_tabular_structure_is_rejected_for_each_dialect(
@@ -376,7 +385,10 @@ def test_non_finite_json_tokens_are_rejected_in_every_structural_context(
         (b'[{"record_id":"S1"},[]]', "array item 1 is array"),
     ],
     ids=[
-        "object-root", "integer-root", "string-root", "integer-record",
+        "object-root",
+        "integer-root",
+        "string-root",
+        "integer-record",
         "array-record",
     ],
 )
@@ -458,9 +470,14 @@ def test_json_errors_survive_cleanup_with_their_original_context() -> None:
         ("records.json", b'[{"a":{"b":1,"b":2}}]', "invalid_structure"),
     ],
     ids=[
-        "missing-extension", "unknown-extension", "malformed-json",
-        "empty-json-file", "empty-csv-file", "empty-tsv-file",
-        "duplicate-record-member", "duplicate-nested-member",
+        "missing-extension",
+        "unknown-extension",
+        "malformed-json",
+        "empty-json-file",
+        "empty-csv-file",
+        "empty-tsv-file",
+        "duplicate-record-member",
+        "duplicate-nested-member",
     ],
 )
 def test_invalid_inputs_are_rejected_with_the_specific_input_error(

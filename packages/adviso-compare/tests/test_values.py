@@ -280,11 +280,16 @@ def test_fixed_comparator_matrix(
         ({"relative_tolerance": "0.05"}, "0", "0.0000000000000001", False),
     ],
     ids=[
-        "absolute-upper-bound", "absolute-lower-bound",
-        "above-absolute-bound", "relative-upper-bound",
-        "relative-lower-bound", "above-relative-bound",
-        "reference-directed-relative-bound", "negative-reference",
-        "zero-reference-equal", "zero-reference-unequal",
+        "absolute-upper-bound",
+        "absolute-lower-bound",
+        "above-absolute-bound",
+        "relative-upper-bound",
+        "relative-lower-bound",
+        "above-relative-bound",
+        "reference-directed-relative-bound",
+        "negative-reference",
+        "zero-reference-equal",
+        "zero-reference-unequal",
     ],
 )
 def test_numeric_tolerance_is_exact_inclusive_and_reference_directed(
@@ -465,8 +470,7 @@ def test_mixed_values_phase_accounts_for_every_configured_opportunity(
         records.counts.extra,
     ) == (2, 2, 1, 1, 1)
     assert {
-        opportunity.alignment.canonical_identity
-        for opportunity in result.opportunities
+        opportunity.alignment.canonical_identity for opportunity in result.opportunities
     } == {("S1",)}
     assert [
         (opportunity.canonical_field, opportunity.disposition)
@@ -529,10 +533,7 @@ def test_automatic_configuration_flows_through_the_values_phase(
     )
     query = _write(
         tmp_path / "query.json",
-        (
-            '[{"record_id":"S1","same":1,"different":"observed",'
-            '"query_only":"context"}]'
-        ),
+        ('[{"record_id":"S1","same":1,"different":"observed","query_only":"context"}]'),
     )
     prepared = prepare_comparison(
         ComparisonInvocation(
@@ -553,9 +554,10 @@ def test_automatic_configuration_flows_through_the_values_phase(
         "different",
         "same",
     )
-    assert {
-        exclusion.source_field for exclusion in contract.exclusions
-    } == {"query_only", "reference_only"}
+    assert {exclusion.source_field for exclusion in contract.exclusions} == {
+        "query_only",
+        "reference_only",
+    }
     assert [
         (opportunity.canonical_field, opportunity.disposition)
         for opportunity in result.opportunities
@@ -569,9 +571,7 @@ def test_automatic_configuration_flows_through_the_values_phase(
         result.counts.mismatched,
         result.counts.not_assessable,
     ) == (1, 1, 0)
-    assert [finding.canonical_field for finding in result.findings] == [
-        "different"
-    ]
+    assert [finding.canonical_field for finding in result.findings] == ["different"]
 
 
 def test_value_mismatches_do_not_make_the_values_phase_incomplete(

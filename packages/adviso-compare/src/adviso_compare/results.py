@@ -86,9 +86,7 @@ class ComparisonEvidence:
         """Create an artifact after contextual validation has succeeded."""
         instance = object.__new__(cls)
         object.__setattr__(instance, "_json_bytes", json_bytes)
-        object.__setattr__(
-            instance, "_configuration_bytes", configuration_bytes
-        )
+        object.__setattr__(instance, "_configuration_bytes", configuration_bytes)
         return instance
 
     @property
@@ -169,9 +167,11 @@ def assemble_result(
         raise ValueError("run_id must be a UUID version 4")
     if completion.tzinfo is None or completion.utcoffset() is None:
         raise ValueError("completed_at must be timezone-aware")
-    completion_text = completion.astimezone(timezone.utc).replace(
-        microsecond=0
-    ).strftime("%Y-%m-%dT%H:%M:%SZ")
+    completion_text = (
+        completion.astimezone(timezone.utc)
+        .replace(microsecond=0)
+        .strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
     runtime_identity = runtime or current_runtime_identity()
     configuration_document = prepared.configuration.document
     ordered_configuration = _ordered_configuration(configuration_document)
@@ -227,9 +227,7 @@ def assemble_result(
         records=records,
         values=values,
     )
-    return ComparisonEvidence._from_validated_bytes(
-        json_bytes, configuration_bytes
-    )
+    return ComparisonEvidence._from_validated_bytes(json_bytes, configuration_bytes)
 
 
 def serialize_result(document: Mapping[str, object]) -> bytes:
@@ -279,17 +277,12 @@ def validate_result(
     try:
         validate_saved_configuration(configuration)
     except ConfigurationError as error:
-        raise ResultValidationError(
-            "saved configuration failed validation"
-        ) from error
+        raise ResultValidationError("saved configuration failed validation") from error
     _require(
-        (version, configuration["schema_version"])
-        in SUPPORTED_SCHEMA_COMBINATIONS,
+        (version, configuration["schema_version"]) in SUPPORTED_SCHEMA_COMBINATIONS,
         "unsupported results and configuration schema combination",
     )
-    _validate_semantics(
-        document, configuration, prepared, contract, records, values
-    )
+    _validate_semantics(document, configuration, prepared, contract, records, values)
 
 
 @lru_cache(maxsize=1)
@@ -302,6 +295,7 @@ def _results_validator(version: str) -> Draft202012Validator:
 
 def parse_evidence_json(content: bytes) -> JsonObject:
     """Parse strict UTF-8 JSON evidence, rejecting duplicate object members."""
+
     def object_members(pairs: list[tuple[str, Any]]) -> JsonObject:
         document: JsonObject = {}
         for name, value in pairs:
@@ -327,9 +321,7 @@ def parse_evidence_json(content: bytes) -> JsonObject:
             parse_float=finite_float,
         )
     except (UnicodeDecodeError, ValueError) as error:
-        raise ResultValidationError(
-            "evidence is not strict UTF-8 JSON"
-        ) from error
+        raise ResultValidationError("evidence is not strict UTF-8 JSON") from error
     if not isinstance(document, dict):
         raise ResultValidationError("evidence JSON root is not an object")
     return document
@@ -457,11 +449,7 @@ def _ordered_selected(
     names: tuple[str, ...],
 ) -> JsonObject:
     """Copy selected fixed properties in documented schema order."""
-    return {
-        name: _ordered_nested(document[name])
-        for name in names
-        if name in document
-    }
+    return {name: _ordered_nested(document[name]) for name in names if name in document}
 
 
 def _ordered_nested(value: object) -> object:
@@ -554,10 +542,7 @@ def _assemble_findings(
 ) -> list[JsonObject]:
     """Convert, coalesce, sort, and identify every finding candidate."""
     candidates = [
-        *(
-            _record_finding_document(finding)
-            for finding in records.findings
-        ),
+        *(_record_finding_document(finding) for finding in records.findings),
         *(
             _contract_finding_document(configuration, records, contract, finding)
             for finding in contract.findings
@@ -915,9 +900,7 @@ def _finding_sort_key(finding: Mapping[str, object]) -> tuple[object, ...]:
     if isinstance(identity, dict):
         canonical_identity = tuple(identity["canonical"])
     remaining = {
-        key: value
-        for key, value in finding.items()
-        if key not in {"id", "message"}
+        key: value for key, value in finding.items() if key not in {"id", "message"}
     }
     return (
         classification_order[str(finding["classification"])],
@@ -997,8 +980,7 @@ def _validate_semantics(
     )
     configuration_fields = configuration["fields"]
     compared_field_count = len(
-        set(configuration_fields["in_scope"])
-        - set(configuration_fields["record_key"])
+        set(configuration_fields["in_scope"]) - set(configuration_fields["record_key"])
     )
     value_summary = document["summary"]["values"]
     classified_opportunities = sum(value_summary.values())
@@ -1159,9 +1141,7 @@ def _validate_configuration_derivations(
         "reference": [
             definitions[name]["source_fields"]["reference"] for name in record_key
         ],
-        "query": [
-            definitions[name]["source_fields"]["query"] for name in record_key
-        ],
+        "query": [definitions[name]["source_fields"]["query"] for name in record_key],
         "canonical": record_key,
     }
     _require(
@@ -1220,8 +1200,7 @@ def _expected_undeclared_exclusions(
         ("query", prepared.query),
     ):
         represented = {
-            definition["source_fields"][side]
-            for definition in definitions.values()
+            definition["source_fields"][side] for definition in definitions.values()
         }
         for source_field in sorted(set(dataset.field_names) - represented):
             expected.append(

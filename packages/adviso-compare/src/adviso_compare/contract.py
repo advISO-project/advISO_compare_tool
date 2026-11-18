@@ -110,9 +110,7 @@ class UndeclaredFieldExclusion:
 
 
 FieldExclusion: TypeAlias = ConfiguredFieldExclusion | UndeclaredFieldExclusion
-AssessmentIndex: TypeAlias = Mapping[
-    tuple[InputSide, RecordKey, str], FieldAssessment
-]
+AssessmentIndex: TypeAlias = Mapping[tuple[InputSide, RecordKey, str], FieldAssessment]
 
 
 @dataclass(frozen=True, slots=True)

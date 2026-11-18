@@ -146,16 +146,15 @@ def _invalid_key(document: JsonObject) -> None:
         ),
         (
             _invalid_key,
-            (
-                "reference_id,reference_batch\n"
-                "S1,not-an-integer\n"
-            ),
+            ("reference_id,reference_batch\nS1,not-an-integer\n"),
             "reference key field 'reference_batch' is invalid",
             TabularLocation(1, 2, "reference_batch"),
         ),
     ],
     ids=[
-        "missing-key", "null-key", "invalid-key-component",
+        "missing-key",
+        "null-key",
+        "invalid-key-component",
     ],
 )
 def test_missing_null_and_invalid_custom_keys_are_attributable_input_errors(
@@ -174,9 +173,7 @@ def test_missing_null_and_invalid_custom_keys_are_attributable_input_errors(
     configuration = _write_configuration(tmp_path, document)
 
     with pytest.raises(RecordKeyError) as raised:
-        prepare_comparison(
-            _invocation(tmp_path, reference, query, configuration)
-        )
+        prepare_comparison(_invocation(tmp_path, reference, query, configuration))
 
     error = raised.value
     assert error.code == "invalid_record_key"
@@ -210,15 +207,12 @@ def test_duplicate_canonical_keys_report_both_locations_without_overwriting(
     )
     query = _write(
         tmp_path / "query.csv",
-        "query_id\n"
-        + (duplicate if duplicate_side is InputSide.QUERY else singleton),
+        "query_id\n" + (duplicate if duplicate_side is InputSide.QUERY else singleton),
     )
     configuration = _write_configuration(tmp_path, document)
 
     with pytest.raises(RecordKeyError) as raised:
-        prepare_comparison(
-            _invocation(tmp_path, reference, query, configuration)
-        )
+        prepare_comparison(_invocation(tmp_path, reference, query, configuration))
 
     error = raised.value
     assert error.side is duplicate_side
@@ -236,9 +230,9 @@ def test_key_error_diagnostic_escapes_control_characters_in_json_pointer(
 ) -> None:
     """An exact structured location cannot introduce a diagnostic line break."""
     document = minimal_configuration()
-    document["fields"]["definitions"]["record_id"]["source_fields"][
-        "reference"
-    ] = "id\nline"
+    document["fields"]["definitions"]["record_id"]["source_fields"]["reference"] = (
+        "id\nline"
+    )
     reference = _write(
         tmp_path / "reference.json",
         json.dumps([{"id\nline": None}]),
@@ -247,9 +241,7 @@ def test_key_error_diagnostic_escapes_control_characters_in_json_pointer(
     configuration = _write_configuration(tmp_path, document)
 
     with pytest.raises(RecordKeyError) as raised:
-        prepare_comparison(
-            _invocation(tmp_path, reference, query, configuration)
-        )
+        prepare_comparison(_invocation(tmp_path, reference, query, configuration))
 
     assert raised.value.locations == (JsonLocation("/0/id\nline"),)
     assert "\n" not in raised.value.diagnostic
@@ -303,10 +295,7 @@ def test_automatic_configuration_is_invariant_to_input_and_field_order(
     """Equivalent record, member, and column orderings produce identical rules."""
     first_reference = _write(
         tmp_path / "first-reference.json",
-        (
-            '[{"record_id":"S2","b":2,"a":"y"},'
-            '{"record_id":"S1","a":"x","b":1}]'
-        ),
+        ('[{"record_id":"S2","b":2,"a":"y"},{"record_id":"S1","a":"x","b":1}]'),
     )
     first_query = _write(
         tmp_path / "first-query.csv",
@@ -314,22 +303,15 @@ def test_automatic_configuration_is_invariant_to_input_and_field_order(
     )
     second_reference = _write(
         tmp_path / "second-reference.json",
-        (
-            '[{"a":"x","b":1,"record_id":"S1"},'
-            '{"a":"y","record_id":"S2","b":2}]'
-        ),
+        ('[{"a":"x","b":1,"record_id":"S1"},{"a":"y","record_id":"S2","b":2}]'),
     )
     second_query = _write(
         tmp_path / "second-query.csv",
         "a,record_id,b\ny,S2,2\nx,S1,1\n",
     )
 
-    first = prepare_comparison(
-        _invocation(tmp_path, first_reference, first_query)
-    )
-    second = prepare_comparison(
-        _invocation(tmp_path, second_reference, second_query)
-    )
+    first = prepare_comparison(_invocation(tmp_path, first_reference, first_query))
+    second = prepare_comparison(_invocation(tmp_path, second_reference, second_query))
 
     assert first.configuration.document == second.configuration.document
     assert set(first.reference_records.by_key) == set(second.reference_records.by_key)
@@ -388,7 +370,8 @@ def test_automatic_discovery_selects_the_only_exact_shared_string_candidate(
         ),
     ],
     ids=[
-        "no-shared-identity", "ambiguous-candidates",
+        "no-shared-identity",
+        "ambiguous-candidates",
         "composite-only-identity",
     ],
 )
@@ -446,24 +429,20 @@ def test_invalid_automatic_candidates_are_ignored_without_coercion(
     ("query_text", "message_fragment"),
     [
         (
-            (
-                '[{"record_id":"Q1","sample":"S1"},'
-                '{"sample":"S2"}]'
-            ),
+            ('[{"record_id":"Q1","sample":"S1"},{"sample":"S2"}]'),
             "is missing",
         ),
         ('[{"record_id":null,"sample":"S1"}]', "is null"),
         ('[{"record_id":1,"sample":"S1"}]', "is not a parser-native string"),
         (
-            (
-                '[{"record_id":"Q1","sample":"S1"},'
-                '{"record_id":"Q1","sample":"S2"}]'
-            ),
+            ('[{"record_id":"Q1","sample":"S1"},{"record_id":"Q1","sample":"S2"}]'),
             "duplicate record key",
         ),
     ],
     ids=[
-        "missing-record-id", "null-record-id", "numeric-record-id",
+        "missing-record-id",
+        "null-record-id",
+        "numeric-record-id",
         "duplicate-record-id",
     ],
 )
@@ -475,10 +454,7 @@ def test_invalid_shared_record_id_never_falls_back_to_another_candidate(
     """Every preferred-key defect is fatal even when sample could identify records."""
     reference = _write(
         tmp_path / "reference.json",
-        (
-            '[{"record_id":"R1","sample":"S1"},'
-            '{"record_id":"R2","sample":"S2"}]'
-        ),
+        ('[{"record_id":"R1","sample":"S1"},{"record_id":"R2","sample":"S2"}]'),
     )
     query = _write(tmp_path / "query.json", query_text)
 
@@ -499,9 +475,7 @@ def test_header_only_record_id_is_valid_but_empty_json_has_no_automatic_key(
     reference_csv = _write(tmp_path / "reference.csv", "record_id,value\n")
     query_tsv = _write(tmp_path / "query.tsv", "record_id\tvalue\n")
 
-    prepared = prepare_comparison(
-        _invocation(tmp_path, reference_csv, query_tsv)
-    )
+    prepared = prepare_comparison(_invocation(tmp_path, reference_csv, query_tsv))
 
     assert prepared.configuration.record_key == ("record_id",)
     assert prepared.reference_records.records == ()
@@ -510,9 +484,7 @@ def test_header_only_record_id_is_valid_but_empty_json_has_no_automatic_key(
     empty_reference = _write(tmp_path / "empty-reference.json", "[]")
     empty_query = _write(tmp_path / "empty-query.json", "[]")
     with pytest.raises(RecordKeyError) as raised:
-        prepare_comparison(
-            _invocation(tmp_path, empty_reference, empty_query)
-        )
+        prepare_comparison(_invocation(tmp_path, empty_reference, empty_query))
     assert "no field satisfied" in raised.value.message
 
 

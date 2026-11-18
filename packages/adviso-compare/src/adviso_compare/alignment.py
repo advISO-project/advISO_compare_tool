@@ -162,16 +162,13 @@ def align_records(
             findings.append(RecordFinding(alignment))
 
     matched = sum(
-        alignment.disposition is RecordDisposition.MATCHED
-        for alignment in alignments
+        alignment.disposition is RecordDisposition.MATCHED for alignment in alignments
     )
     missing = sum(
-        alignment.disposition is RecordDisposition.MISSING
-        for alignment in alignments
+        alignment.disposition is RecordDisposition.MISSING for alignment in alignments
     )
     extra = sum(
-        alignment.disposition is RecordDisposition.EXTRA
-        for alignment in alignments
+        alignment.disposition is RecordDisposition.EXTRA for alignment in alignments
     )
     alignment_tuple = tuple(alignments)
     return RecordsResult(

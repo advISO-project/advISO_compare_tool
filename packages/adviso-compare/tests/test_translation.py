@@ -87,13 +87,22 @@ def _scalar_field(logical_type: str) -> FieldMutation:
         ),
     ],
     ids=[
-        "string-preserves-leading-zero", "native-integer",
-        "signed-integer-text", "integer-to-decimal", "native-decimal",
-        "signed-decimal-text", "decimal-text-leading-zero",
-        "integer-text-to-decimal", "scientific-decimal-text",
-        "native-boolean", "boolean-text", "leap-day",
-        "datetime-offset-and-fraction", "lowercase-datetime-separators",
-        "maximum-positive-offset", "maximum-negative-offset",
+        "string-preserves-leading-zero",
+        "native-integer",
+        "signed-integer-text",
+        "integer-to-decimal",
+        "native-decimal",
+        "signed-decimal-text",
+        "decimal-text-leading-zero",
+        "integer-text-to-decimal",
+        "scientific-decimal-text",
+        "native-boolean",
+        "boolean-text",
+        "leap-day",
+        "datetime-offset-and-fraction",
+        "lowercase-datetime-separators",
+        "maximum-positive-offset",
+        "maximum-negative-offset",
     ],
 )
 def test_declared_scalar_types_parse_without_implicit_cross_type_conversion(
@@ -191,16 +200,29 @@ def test_declared_scalar_types_parse_without_implicit_cross_type_conversion(
         ("integer", NativeValue(NativeCategory.OBJECT, ()), "type_mismatch"),
     ],
     ids=[
-        "integer-source-for-string", "decimal-source-for-integer",
-        "decimal-text-for-integer", "exponent-text-for-integer",
-        "boolean-source-for-integer", "boolean-source-for-decimal",
-        "decimal-without-integer-part", "decimal-without-fractional-part",
-        "nan-text", "positive-infinity-text", "negative-infinity-text",
-        "integer-source-for-boolean", "uppercase-boolean-text",
-        "impossible-date", "unpadded-date", "incomplete-date",
-        "datetime-without-offset", "leap-second", "datetime-space-separator",
-        "datetime-unknown-offset", "positive-offset-out-of-range",
-        "negative-offset-out-of-range", "object-source-for-integer",
+        "integer-source-for-string",
+        "decimal-source-for-integer",
+        "decimal-text-for-integer",
+        "exponent-text-for-integer",
+        "boolean-source-for-integer",
+        "boolean-source-for-decimal",
+        "decimal-without-integer-part",
+        "decimal-without-fractional-part",
+        "nan-text",
+        "positive-infinity-text",
+        "negative-infinity-text",
+        "integer-source-for-boolean",
+        "uppercase-boolean-text",
+        "impossible-date",
+        "unpadded-date",
+        "incomplete-date",
+        "datetime-without-offset",
+        "leap-second",
+        "datetime-space-separator",
+        "datetime-unknown-offset",
+        "positive-offset-out-of-range",
+        "negative-offset-out-of-range",
+        "object-source-for-integer",
     ],
 )
 def test_scalar_failures_distinguish_category_mismatch_from_invalid_content(
@@ -269,9 +291,7 @@ def test_source_processing_missing_tokens_and_closed_mapping_follow_fixed_order(
         field["null_policy"] = {
             "allowed": True,
             "nulls_equal": True,
-            "missing_tokens": {
-                "reference": [{"category": "string", "value": " NA "}]
-            },
+            "missing_tokens": {"reference": [{"category": "string", "value": " NA "}]},
         }
         field["source_normalisation"] = {
             "reference": [
@@ -355,8 +375,10 @@ def test_source_text_operations_leave_non_string_native_values_unchanged(
         ("trailing", " Ｋ ", " k"),
     ],
     ids=[
-        "trim-unicode-spaces-both-sides", "retain-non-whitespace-control",
-        "trim-leading-only", "trim-trailing-only",
+        "trim-unicode-spaces-both-sides",
+        "retain-non-whitespace-control",
+        "trim-leading-only",
+        "trim-trailing-only",
     ],
 )
 def test_source_text_operations_apply_to_strings_in_declared_order(
@@ -396,13 +418,11 @@ def test_case_folding_is_full_locale_independent_and_does_not_normalise(
 
     def configured(field: JsonObject) -> None:
         _scalar_field("string")(field)
-        field["source_normalisation"] = {
-            "reference": [{"operation": "case_fold"}]
-        }
+        field["source_normalisation"] = {"reference": [{"operation": "case_fold"}]}
 
     field = _field_definition(tmp_path, configured)
     result = translate_field_value(
-        NativeValue(NativeCategory.STRING, "Straße A\u030A"),
+        NativeValue(NativeCategory.STRING, "Straße A\u030a"),
         field,
         InputSide.REFERENCE,
     )
@@ -464,8 +484,11 @@ def test_case_folding_is_full_locale_independent_and_does_not_normalise(
         ),
     ],
     ids=[
-        "decimal-half-even", "decimal-half-up", "decimal-round-toward-zero",
-        "datetime-whole-second", "datetime-millisecond",
+        "decimal-half-even",
+        "decimal-half-up",
+        "decimal-round-toward-zero",
+        "datetime-whole-second",
+        "datetime-millisecond",
         "datetime-microsecond",
     ],
 )
@@ -503,9 +526,7 @@ def _collection_field(
         }
         field["comparator"] = {"name": f"{collection_type}_exact"}
         if query_representation is not None:
-            field["collection_representation"] = {
-                "query": query_representation
-            }
+            field["collection_representation"] = {"query": query_representation}
 
     return mutate
 
@@ -557,8 +578,10 @@ def _collection_field(
         ),
     ],
     ids=[
-        "list-preserves-order-and-duplicates", "set-canonical-order",
-        "multiset-retains-occurrences", "empty-delimited-list",
+        "list-preserves-order-and-duplicates",
+        "set-canonical-order",
+        "multiset-retains-occurrences",
+        "empty-delimited-list",
         "empty-delimited-elements",
     ],
 )
@@ -689,8 +712,11 @@ def _collection_with_unmatched_element_mapping(field: JsonObject) -> None:
         ),
     ],
     ids=[
-        "non-collection-source", "malformed-json-array", "null-element",
-        "duplicate-translated-set-element", "unmapped-element",
+        "non-collection-source",
+        "malformed-json-array",
+        "null-element",
+        "duplicate-translated-set-element",
+        "unmapped-element",
     ],
 )
 def test_collection_failures_identify_the_failed_processing_stage(
@@ -755,14 +781,19 @@ def test_preserved_exact_retains_recursive_parser_native_content(
         ("1e-1000000", "1e-1000000"),
     ],
     ids=[
-        "negative-zero", "integer-trailing-zeros",
-        "fractional-trailing-zeros", "small-decimal",
-        "negative-small-decimal", "precision-beyond-default-context",
-        "exponent-above-context-limit", "exponent-below-context-limit",
+        "negative-zero",
+        "integer-trailing-zeros",
+        "fractional-trailing-zeros",
+        "small-decimal",
+        "negative-small-decimal",
+        "precision-beyond-default-context",
+        "exponent-above-context-limit",
+        "exponent-below-context-limit",
     ],
 )
 def test_canonical_decimal_text_preserves_precision_without_context_rounding(
-    source: str, expected: str,
+    source: str,
+    expected: str,
 ) -> None:
     """Formatting removes insignificant zeros without numerical operations."""
     with localcontext() as context:

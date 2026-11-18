@@ -29,9 +29,7 @@ from adviso_compare.processing import apply_source_text_operation
 
 
 _INTEGER_PATTERN = re.compile(r"^[+-]?[0-9]+$")
-_DECIMAL_PATTERN = re.compile(
-    r"^[+-]?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$"
-)
+_DECIMAL_PATTERN = re.compile(r"^[+-]?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$")
 _DATE_PATTERN = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
 _DATETIME_PATTERN = re.compile(
     r"^(?P<date>[0-9]{4}-[0-9]{2}-[0-9]{2})[Tt]"
@@ -317,15 +315,11 @@ def _translate_collection(
                 TranslationStage.COLLECTION_VALIDATION,
             )
         canonical_elements.sort(
-            key=lambda value: render_canonical_scalar(
-                value, logical_type.element_type
-            )
+            key=lambda value: render_canonical_scalar(value, logical_type.element_type)
         )
     elif logical_type.collection_type == "multiset":
         canonical_elements.sort(
-            key=lambda value: render_canonical_scalar(
-                value, logical_type.element_type
-            )
+            key=lambda value: render_canonical_scalar(value, logical_type.element_type)
         )
 
     return TranslatedValue(

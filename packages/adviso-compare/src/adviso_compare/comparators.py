@@ -20,9 +20,7 @@ from adviso_compare.translation import (
 )
 
 
-ComparatorFunction = Callable[
-    [FieldDefinition, TranslatedValue, TranslatedValue], bool
-]
+ComparatorFunction = Callable[[FieldDefinition, TranslatedValue, TranslatedValue], bool]
 
 
 def compare_translated_values(
@@ -37,11 +35,7 @@ def compare_translated_values(
     ):
         raise ValueError("comparators require two valid translated values")
     if reference.is_null or query.is_null:
-        return (
-            reference.is_null
-            and query.is_null
-            and field.null_policy.nulls_equal
-        )
+        return reference.is_null and query.is_null and field.null_policy.nulls_equal
     try:
         comparator = _COMPARATORS[field.comparator.name]
     except KeyError as error:
@@ -214,9 +208,9 @@ def numeric_difference_and_tolerance(
     if "absolute_tolerance" in parameters:
         allowed = _tolerance_fraction(parameters["absolute_tolerance"])
     elif "relative_tolerance" in parameters:
-        allowed = _tolerance_fraction(
-            parameters["relative_tolerance"]
-        ) * abs(reference_fraction)
+        allowed = _tolerance_fraction(parameters["relative_tolerance"]) * abs(
+            reference_fraction
+        )
     else:
         raise AssertionError("numeric tolerance has no validated parameter")
     return difference, allowed

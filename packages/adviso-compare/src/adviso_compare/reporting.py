@@ -75,9 +75,7 @@ def render_html_report(
     findings = document["findings"]
 
     status = str(run["status"])
-    difference_count = finding_summary["by_classification"][
-        "comparison_difference"
-    ]
+    difference_count = finding_summary["by_classification"]["comparison_difference"]
     issue_count = finding_summary["by_classification"]["assessment_issue"]
     sections = [
         "<!doctype html>",
@@ -108,18 +106,20 @@ def render_html_report(
         '<div class="headline-grid">',
         _metric("Run completeness", status.title(), status, "coverage"),
         _metric(
-            "Comparison differences", str(difference_count), "difference",
+            "Comparison differences",
+            str(difference_count),
+            "difference",
             "comparison-differences",
         ),
-        _metric(
-            "Assessment issues", str(issue_count), "issue", "assessment-issues"
-        ),
+        _metric("Assessment issues", str(issue_count), "issue", "assessment-issues"),
         "</div>",
-        '<p class="phase-statuses">' + " · ".join(
+        '<p class="phase-statuses">'
+        + " · ".join(
             f"<span>{name.title()}: <strong>{_escape(phases[name].title())}"
             "</strong></span>"
             for name in ("contract", "records", "values")
-        ) + "</p>",
+        )
+        + "</p>",
         '<p class="explanation">This comparison translated the inputs '
         "under the saved configuration and performed contract, records, "
         "and values phases. Completeness describes assessment coverage, "
@@ -136,12 +136,10 @@ def render_html_report(
         (
             _limitations_section(exclusions, configuration),
             "</section>",
-            _findings_section(
-                findings, document["record_key_fields"], configuration
-            ),
+            _findings_section(findings, document["record_key_fields"], configuration),
             '<section aria-labelledby="supporting">'
             '<h2 id="supporting">Supporting detail</h2>'
-            '<details><summary>Full counts and comparison phases</summary>',
+            "<details><summary>Full counts and comparison phases</summary>",
             _phase_section(phases),
             _counts_section(summary),
             "</details></section>",
@@ -169,17 +167,11 @@ def validate_evidence_package(directory: Path) -> None:
     try:
         members = {member.name for member in directory.iterdir()}
     except OSError as error:
-        raise ResultValidationError(
-            "evidence package is unreadable"
-        ) from error
+        raise ResultValidationError("evidence package is unreadable") from error
     if members != {RESULTS_FILENAME, CONFIGURATION_FILENAME, REPORT_FILENAME}:
         raise ResultValidationError("evidence package members are invalid")
-    document = parse_evidence_json(
-        _read_regular_member(directory / RESULTS_FILENAME)
-    )
-    configuration_bytes = _read_regular_member(
-        directory / CONFIGURATION_FILENAME
-    )
+    document = parse_evidence_json(_read_regular_member(directory / RESULTS_FILENAME))
+    configuration_bytes = _read_regular_member(directory / CONFIGURATION_FILENAME)
     _require_regular_member(directory / REPORT_FILENAME)
     validate_result(document, configuration_bytes=configuration_bytes)
 
@@ -189,9 +181,7 @@ def _require_regular_member(path: Path) -> os.stat_result:
     try:
         status = path.lstat()
     except OSError as error:
-        raise ResultValidationError(
-            "evidence member is unavailable"
-        ) from error
+        raise ResultValidationError("evidence member is unavailable") from error
     if not stat.S_ISREG(status.st_mode):
         raise ResultValidationError("evidence member must be a regular file")
     return status
@@ -213,9 +203,7 @@ def _read_regular_member(path: Path) -> bytes:
                 and os.path.samestat(expected, actual)
                 and os.path.samestat(current, actual)
             ):
-                raise ResultValidationError(
-                    "evidence member changed during open"
-                )
+                raise ResultValidationError("evidence member changed during open")
             return stream.read()
     except OSError as error:
         raise ResultValidationError("evidence member is unreadable") from error
@@ -225,9 +213,7 @@ def publish_evidence_package(parent: Path, result: ComparisonEvidence) -> Path:
     """Publish validated evidence in a child named from its run metadata."""
     document = result.document()
     json_content = result.json_bytes
-    html_content = render_html_report(
-        document, result.configuration_document()
-    )
+    html_content = render_html_report(document, result.configuration_document())
     run = document["run"]
     timestamp = run["completed_at"].replace("-", "").replace(":", "")
     parent = Path(parent)
@@ -243,9 +229,7 @@ def publish_evidence_package(parent: Path, result: ComparisonEvidence) -> Path:
         stage = staging_root / "package"
         stage.mkdir(mode=0o700)
         _write_atomic_member(stage / RESULTS_FILENAME, json_content)
-        _write_atomic_member(
-            stage / CONFIGURATION_FILENAME, result.configuration_bytes
-        )
+        _write_atomic_member(stage / CONFIGURATION_FILENAME, result.configuration_bytes)
         _write_atomic_member(stage / REPORT_FILENAME, html_content)
         _fsync_directory(stage)
         _publish_new_package(stage, destination)
@@ -255,9 +239,7 @@ def publish_evidence_package(parent: Path, result: ComparisonEvidence) -> Path:
     except OSError as error:
         raise OutputError(
             code="write_failed",
-            message=(
-                "the output parent or evidence package could not be written"
-            ),
+            message=("the output parent or evidence package could not be written"),
         ) from error
     finally:
         if staging_root is not None:
@@ -284,9 +266,7 @@ def _prepare_output_parent(parent: Path) -> None:
     if not stat.S_ISDIR(mode):
         raise OutputError(
             code="invalid_destination",
-            message=(
-                "the output parent must be a regular directory, not a link"
-            ),
+            message=("the output parent must be a regular directory, not a link"),
         )
 
 
@@ -318,31 +298,39 @@ def _rename_exclusively(source: Path, destination: Path) -> None:
         os.rename(source, destination)
         return
     if sys.platform not in {"linux", "darwin"}:
-        raise OSError(
-            errno.ENOTSUP, "exclusive directory rename is unavailable"
-        )
+        raise OSError(errno.ENOTSUP, "exclusive directory rename is unavailable")
 
     library = ctypes.CDLL(None, use_errno=True)
     try:
         if sys.platform == "linux":
             rename = library.renameat2
             rename.argtypes = (
-                ctypes.c_int, ctypes.c_char_p,
-                ctypes.c_int, ctypes.c_char_p, ctypes.c_uint,
+                ctypes.c_int,
+                ctypes.c_char_p,
+                ctypes.c_int,
+                ctypes.c_char_p,
+                ctypes.c_uint,
             )
             rename.restype = ctypes.c_int
             result = rename(
-                _AT_FDCWD, os.fsencode(source),
-                _AT_FDCWD, os.fsencode(destination), _RENAME_NOREPLACE,
+                _AT_FDCWD,
+                os.fsencode(source),
+                _AT_FDCWD,
+                os.fsencode(destination),
+                _RENAME_NOREPLACE,
             )
         else:
             rename = library.renamex_np
             rename.argtypes = (
-                ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint,
+                ctypes.c_char_p,
+                ctypes.c_char_p,
+                ctypes.c_uint,
             )
             rename.restype = ctypes.c_int
             result = rename(
-                os.fsencode(source), os.fsencode(destination), _RENAME_EXCL,
+                os.fsencode(source),
+                os.fsencode(destination),
+                _RENAME_EXCL,
             )
     except AttributeError as error:
         raise OSError(
@@ -434,7 +422,7 @@ def _metric(label: str, value: str, kind: str, target: str) -> str:
 def _phase_section(phases: Mapping[str, Any]) -> str:
     """Render the ordered comparison-phase traceability table."""
     rows = "".join(
-        f"<tr><th scope=\"row\">{_escape(name.title())}</th>"
+        f'<tr><th scope="row">{_escape(name.title())}</th>'
         f"<td>{_escape(str(phases[name]).title())}</td></tr>"
         for name in ("contract", "records", "values")
     )
@@ -448,13 +436,15 @@ def _phase_section(phases: Mapping[str, Any]) -> str:
 
 
 def _identity_section(
-    inputs: Mapping[str, Any], metadata: Mapping[str, Any],
+    inputs: Mapping[str, Any],
+    metadata: Mapping[str, Any],
     run: Mapping[str, Any],
 ) -> str:
     """Identify the compared inputs and configuration before the outcome."""
     title = (
         f"<dt>Configuration title</dt><dd>{_escape(metadata['title'])}</dd>"
-        if metadata.get("title") else ""
+        if metadata.get("title")
+        else ""
     )
     return (
         '<section aria-labelledby="identities"><h2 id="identities">Compared inputs '
@@ -479,7 +469,7 @@ def _automatic_mode_notice() -> str:
         "using strict parser-native equality without domain-specific translation. "
         "Review the exclusions before interpreting findings. Use a custom "
         "configuration when record identity, field correspondence, or value "
-        'equivalence requires domain knowledge. '
+        "equivalence requires domain knowledge. "
         '<a href="#scope-exclusions">View scope and exclusions</a>.'
         "</p></aside>"
     )
@@ -527,8 +517,7 @@ def _findings_section(
             if finding["classification"] == classification
         ]
         items = "".join(
-            _finding_card(finding, key_fields, configuration)
-            for finding in selected
+            _finding_card(finding, key_fields, configuration) for finding in selected
         )
         if not items:
             items = "<p>None reported.</p>"
@@ -549,7 +538,8 @@ def _findings_section(
 
 
 def _finding_card(
-    finding: Mapping[str, Any], key_fields: Mapping[str, Any],
+    finding: Mapping[str, Any],
+    key_fields: Mapping[str, Any],
     configuration: Mapping[str, Any],
 ) -> str:
     """Show the affected record, field and value evidence before raw detail."""
@@ -566,15 +556,12 @@ def _finding_card(
     else:
         context = (
             "<dt>Record</dt><dd><code>"
-            + _escape(_key_text(
-                key_fields["canonical"], identity["canonical"]
-            ))
+            + _escape(_key_text(key_fields["canonical"], identity["canonical"]))
             + "</code></dd>"
         )
     field = finding.get("field")
     definition = (
-        configuration["fields"]["definitions"][field]
-        if field is not None else None
+        configuration["fields"]["definitions"][field] if field is not None else None
     )
     code_label = finding["code"].replace("_", " ").capitalize()
     heading = _escape(code_label)
@@ -593,8 +580,7 @@ def _finding_card(
             + "</pre>"
         )
     context += (
-        "<dt>Affected side</dt>"
-        f"<dd>{_escape(finding['affected_side'].title())}</dd>"
+        f"<dt>Affected side</dt><dd>{_escape(finding['affected_side'].title())}</dd>"
     )
     if "values" in finding:
         if definition is None:
@@ -617,15 +603,14 @@ def _finding_card(
         f"{_escape(priority)}</span></p>"
         + comparison
         + "<details><summary>Comparison rule, source locations, and structured evidence"
-        "</summary>"
-        + rule_detail
-        + f"<pre>{evidence}</pre></details>"
+        "</summary>" + rule_detail + f"<pre>{evidence}</pre></details>"
         "</article>"
     )
 
 
 def _finding_explanation(
-    finding: Mapping[str, Any], definition: Mapping[str, Any] | None,
+    finding: Mapping[str, Any],
+    definition: Mapping[str, Any] | None,
 ) -> str:
     """Explain a recorded finding using only its evidence and saved rules."""
     code = finding["code"]
@@ -639,7 +624,8 @@ def _finding_explanation(
     logical_type = definition.get("logical_type")
     type_label = (
         f"{logical_type['collection_type']} of {logical_type['element_type']}"
-        if isinstance(logical_type, Mapping) else str(logical_type)
+        if isinstance(logical_type, Mapping)
+        else str(logical_type)
     )
     if code == "missing_required_field":
         return f"The {side} field is required by the configuration but is absent."
@@ -661,7 +647,8 @@ def _finding_explanation(
     if code == "mapping_failure":
         subject = (
             f"At least one {side} collection element"
-            if isinstance(logical_type, Mapping) else f"The {side} value"
+            if isinstance(logical_type, Mapping)
+            else f"The {side} value"
         )
         return f"{subject} has no entry in the configured mapping."
     if code != "value_mismatch":
@@ -721,7 +708,8 @@ def _finding_explanation(
 
 
 def _tolerance_explanation(
-    values: Mapping[str, Any], parameters: Mapping[str, Any],
+    values: Mapping[str, Any],
+    parameters: Mapping[str, Any],
 ) -> str:
     """Describe exact arithmetic on recorded post-transformation values."""
     reference = Decimal(values["reference"]["canonical"]["value"])
@@ -775,34 +763,30 @@ def _key_text(names: list[str], values: list[str]) -> str:
     )
 
 
-def _record_presence(
-    identity: Mapping[str, Any], key_fields: Mapping[str, Any]
-) -> str:
+def _record_presence(identity: Mapping[str, Any], key_fields: Mapping[str, Any]) -> str:
     """Present missing/extra records without inventing field-value evidence."""
     entries = {}
     for side in ("reference", "query"):
         entries[side] = (
-            "Record absent" if identity[side] is None
+            "Record absent"
+            if identity[side] is None
             else _key_text(key_fields[side], identity[side])
         )
     return _definition_list(entries)
 
 
-def _value_table(
-    values: Mapping[str, Any], definition: Mapping[str, Any]
-) -> str:
+def _value_table(values: Mapping[str, Any], definition: Mapping[str, Any]) -> str:
     """Present recorded evidence without inferring omitted values."""
     rows = []
     for side in ("query", "reference"):
         evidence = values[side]
         if evidence["state"] == "absent":
-            source = canonical = (
-                '<span class="value-state">Absent field</span>'
-            )
+            source = canonical = '<span class="value-state">Absent field</span>'
         else:
             source = (
                 _source_value(evidence["source"])
-                if "source" in evidence else "Present; value not recorded"
+                if "source" in evidence
+                else "Present; value not recorded"
             )
             if "canonical" in evidence:
                 canonical = _canonical_value(evidence["canonical"])
@@ -844,11 +828,16 @@ def _source_text(value: Mapping[str, Any]) -> str:
     if category == "array":
         return "[" + ", ".join(_source_text(item) for item in content) + "]"
     if category == "object":
-        return "{" + ", ".join(
-            json.dumps(name, ensure_ascii=False) + ": "
-            + _source_text(content[name])
-            for name in sorted(content)
-        ) + "}"
+        return (
+            "{"
+            + ", ".join(
+                json.dumps(name, ensure_ascii=False)
+                + ": "
+                + _source_text(content[name])
+                for name in sorted(content)
+            )
+            + "}"
+        )
     return _scalar_text(content, category)
 
 
@@ -866,9 +855,11 @@ def _canonical_value(value: Mapping[str, Any]) -> str:
     if content is None:
         rendered = "Null (present)"
     elif "element_type" in value:
-        rendered = "[" + ", ".join(
-            _scalar_text(item, value["element_type"]) for item in content
-        ) + "]"
+        rendered = (
+            "["
+            + ", ".join(_scalar_text(item, value["element_type"]) for item in content)
+            + "]"
+        )
         logical_type += f" of {value['element_type']}"
     else:
         rendered = _scalar_text(content, logical_type)
@@ -938,7 +929,7 @@ def _provenance_section(
     inputs = document["inputs"]
     input_rows = "".join(
         "<tr>"
-        f"<th scope=\"row\">{_escape(side.title())}</th>"
+        f'<th scope="row">{_escape(side.title())}</th>'
         f"<td>{_escape(value['basename'])}</td>"
         f"<td>{_escape(value['format'])}</td>"
         f"<td><code>{_escape(value['digest']['value'])}</code></td>"

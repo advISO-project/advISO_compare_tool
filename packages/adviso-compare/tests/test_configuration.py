@@ -94,9 +94,10 @@ def test_valid_configuration_resolves_immutable_defaults_without_altering_docume
     assert measured.typed_normalisation == ()
     assert measured.null_policy.missing_tokens.reference == ()
     assert measured.null_policy.missing_tokens.query == ()
-    assert "review_priority" not in configuration.document["fields"]["definitions"][
-        "measured_value"
-    ]
+    assert (
+        "review_priority"
+        not in configuration.document["fields"]["definitions"]["measured_value"]
+    )
 
     returned_document = configuration.document
     returned_document["metadata"]["id"] = "changed"
@@ -119,9 +120,7 @@ def test_collection_representation_resolves_omitted_side_to_json_array(
     assert representations.reference.element_normalisation == ()
     assert representations.query.format == "delimited_text"
     assert representations.query.delimiter == "/"
-    assert representations.query.element_normalisation[0].name == (
-        "case_fold"
-    )
+    assert representations.query.element_normalisation[0].name == ("case_fold")
 
 
 def test_valid_mapping_and_normalisation_declarations_resolve_in_order(
@@ -222,9 +221,9 @@ def test_forbidden_yaml_features_are_invalid_syntax(
 
 
 def _unknown_source_operation(document: JsonObject) -> None:
-    document["fields"]["definitions"]["measured_value"][
-        "source_normalisation"
-    ] = {"reference": [{"operation": "invented"}]}
+    document["fields"]["definitions"]["measured_value"]["source_normalisation"] = {
+        "reference": [{"operation": "invented"}]
+    }
 
 
 def _invalid_numeric_tolerance(document: JsonObject) -> None:
@@ -246,18 +245,12 @@ def _preserved_field_with_processing(document: JsonObject) -> None:
     field = document["fields"]["definitions"]["measured_value"]
     field.pop("logical_type")
     field["comparator"] = {"name": "preserved_exact"}
-    field["source_normalisation"] = {
-        "reference": [{"operation": "case_fold"}]
-    }
+    field["source_normalisation"] = {"reference": [{"operation": "case_fold"}]}
 
 
 def _collection_with_field_processing(document: JsonObject) -> None:
-    field = _add_collection_field(document)["fields"]["definitions"][
-        "measured_value"
-    ]
-    field["source_normalisation"] = {
-        "reference": [{"operation": "case_fold"}]
-    }
+    field = _add_collection_field(document)["fields"]["definitions"]["measured_value"]
+    field["source_normalisation"] = {"reference": [{"operation": "case_fold"}]}
 
 
 @pytest.mark.parametrize(
@@ -267,15 +260,15 @@ def _collection_with_field_processing(document: JsonObject) -> None:
         (lambda document: document["metadata"].pop("revision"), "$.metadata.revision"),
         (lambda document: document["metadata"].update({"id": None}), "$.metadata.id"),
         (
-            lambda document: document["fields"]["definitions"][
-                "measured_value"
-            ].update({"source_normalisation": {}}),
+            lambda document: document["fields"]["definitions"]["measured_value"].update(
+                {"source_normalisation": {}}
+            ),
             "$.fields.definitions.measured_value.source_normalisation",
         ),
         (
-            lambda document: document["fields"]["definitions"][
-                "measured_value"
-            ].update({"review_priority": "urgent"}),
+            lambda document: document["fields"]["definitions"]["measured_value"].update(
+                {"review_priority": "urgent"}
+            ),
             "$.fields.definitions.measured_value.review_priority",
         ),
         (
@@ -373,9 +366,7 @@ def _incompatible_comparator(document: JsonObject) -> None:
 
 
 def _incompatible_normalisation(document: JsonObject) -> None:
-    document["fields"]["definitions"]["measured_value"][
-        "typed_normalisation"
-    ] = [
+    document["fields"]["definitions"]["measured_value"]["typed_normalisation"] = [
         {
             "operation": "datetime_truncate",
             "parameters": {"precision": "second"},
@@ -452,16 +443,12 @@ def _mapping_source_is_missing_token(document: JsonObject) -> None:
     field["null_policy"] = {
         "allowed": True,
         "nulls_equal": True,
-        "missing_tokens": {
-            "reference": [{"category": "string", "value": "positive"}]
-        },
+        "missing_tokens": {"reference": [{"category": "string", "value": "positive"}]},
     }
 
 
 def _element_mapping_sources_collide(document: JsonObject) -> None:
-    field = _add_collection_field(document)["fields"]["definitions"][
-        "measured_value"
-    ]
+    field = _add_collection_field(document)["fields"]["definitions"]["measured_value"]
     field["collection_representation"]["query"]["element_mapping"].append(
         {
             "from": {"category": "string", "value": "WILD_TYPE"},

@@ -119,10 +119,7 @@ def test_composite_keys_preserve_multiple_records_for_one_sample(
             '[{"reference_id":"S1","reference_batch":"01"},'
             '{"reference_id":"S1","reference_batch":"02"}]'
         ),
-        (
-            '[{"query_id":"S1","query_batch":"2"},'
-            '{"query_id":"S1","query_batch":"1"}]'
-        ),
+        ('[{"query_id":"S1","query_batch":"2"},{"query_id":"S1","query_batch":"1"}]'),
         configuration,
     )
 
@@ -155,14 +152,8 @@ def test_missing_and_extra_records_are_all_reported_deterministically(
     """The union retains its matched intersection and every one-sided record."""
     prepared = _prepare(
         tmp_path,
-        (
-            '[{"record_id":"S3"},{"record_id":"S1"},'
-            '{"record_id":"S2"}]'
-        ),
-        (
-            '[{"record_id":"S5"},{"record_id":"S1"},'
-            '{"record_id":"S4"}]'
-        ),
+        ('[{"record_id":"S3"},{"record_id":"S1"},{"record_id":"S2"}]'),
+        ('[{"record_id":"S5"},{"record_id":"S1"},{"record_id":"S4"}]'),
     )
 
     result = _align(prepared)
@@ -170,14 +161,8 @@ def test_missing_and_extra_records_are_all_reported_deterministically(
     reordered_path.mkdir()
     reordered = _prepare(
         reordered_path,
-        (
-            '[{"record_id":"S2"},{"record_id":"S3"},'
-            '{"record_id":"S1"}]'
-        ),
-        (
-            '[{"record_id":"S4"},{"record_id":"S5"},'
-            '{"record_id":"S1"}]'
-        ),
+        ('[{"record_id":"S2"},{"record_id":"S3"},{"record_id":"S1"}]'),
+        ('[{"record_id":"S4"},{"record_id":"S5"},{"record_id":"S1"}]'),
     )
     reordered_result = _align(reordered)
 
@@ -232,8 +217,7 @@ def test_missing_and_extra_records_are_all_reported_deterministically(
         for finding in reordered_result.findings
     ] == finding_outcome
     assert all(
-        finding.classification == "comparison_difference"
-        and finding.phase == "records"
+        finding.classification == "comparison_difference" and finding.phase == "records"
         for finding in result.findings
     )
     assert result.findings[0].reference_location == JsonLocation("/2")
@@ -279,7 +263,9 @@ def test_missing_and_extra_records_are_all_reported_deterministically(
         ),
     ],
     ids=[
-        "both-empty", "reference-only", "query-only",
+        "both-empty",
+        "reference-only",
+        "query-only",
     ],
 )
 def test_empty_and_one_sided_datasets_reconcile_without_special_cases(

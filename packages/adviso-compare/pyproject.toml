@@ -37,6 +37,7 @@ dependencies = [
 dev = [
     "build>=1.2,<2",
     "pytest>=8,<9",
+    "ruff==0.17.5",
     "setuptools>=69",
     "setuptools-scm>=8",
     "wheel",
@@ -74,6 +75,17 @@ root = "../.."
 relative_to = "pyproject.toml"
 version_file = "src/adviso_compare/_version.py"
 fallback_version = "0.0.0"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+include = ["*.py", "*.pyi"]
+src = ["src", "tests"]
+extend-exclude = ["src/adviso_compare/_version.py", "build", "dist"]
+force-exclude = true
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "UP"]
 
 [tool.pytest.ini_options]
 addopts = [

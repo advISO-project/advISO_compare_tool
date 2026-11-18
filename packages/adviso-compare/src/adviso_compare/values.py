@@ -165,9 +165,7 @@ def compare_values(
         for item in opportunities
     )
     status = (
-        ValuesPhaseStatus.INCOMPLETE
-        if not_assessable
-        else ValuesPhaseStatus.COMPLETE
+        ValuesPhaseStatus.INCOMPLETE if not_assessable else ValuesPhaseStatus.COMPLETE
     )
     return ValuesResult(
         status=status,

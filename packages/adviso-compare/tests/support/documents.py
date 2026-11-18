@@ -54,9 +54,7 @@ def minimal_configuration_bytes() -> bytes:
     document["fields"]["definitions"] = {
         name: definitions[name] for name in sorted(definitions)
     }
-    return (json.dumps(document, ensure_ascii=False, indent=2) + "\n").encode(
-        "utf-8"
-    )
+    return (json.dumps(document, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
 
 
 def minimal_result(

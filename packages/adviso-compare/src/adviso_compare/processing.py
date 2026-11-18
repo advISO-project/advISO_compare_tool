@@ -28,12 +28,8 @@ _UNICODE_WHITE_SPACE_CHARACTERS = "".join(
 _SCALAR_COMPARATORS: Mapping[str, frozenset[str]] = MappingProxyType(
     {
         "string": frozenset({"typed_exact", "normalised_string"}),
-        "integer": frozenset(
-            {"typed_exact", "numeric_exact", "numeric_tolerance"}
-        ),
-        "decimal": frozenset(
-            {"typed_exact", "numeric_exact", "numeric_tolerance"}
-        ),
+        "integer": frozenset({"typed_exact", "numeric_exact", "numeric_tolerance"}),
+        "decimal": frozenset({"typed_exact", "numeric_exact", "numeric_tolerance"}),
         "boolean": frozenset({"typed_exact"}),
         "date": frozenset({"typed_exact", "date_exact"}),
         "datetime": frozenset({"typed_exact", "datetime_exact"}),

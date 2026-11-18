@@ -145,9 +145,7 @@ def test_assembled_result_is_an_immutable_validated_serialization(
     assert configuration == prepared.configuration.document
     configuration["metadata"]["revision"] = "changed"
     assert result.configuration_document() == prepared.configuration.document
-    assert json.loads(result.configuration_bytes) == (
-        prepared.configuration.document
-    )
+    assert json.loads(result.configuration_bytes) == (prepared.configuration.document)
     configuration_validator().validate(result.configuration_document())
     assert result.document()["comparison_configuration_digest"] == {
         "algorithm": "sha256",
@@ -295,7 +293,10 @@ def test_incomplete_result_retains_causal_evidence_without_duplicate_finding(
         ("mapping", '"unknown"', "mapping_failure", "string", False),
     ],
     ids=[
-        "type-mismatch", "invalid-value", "typed-null", "untyped-null",
+        "type-mismatch",
+        "invalid-value",
+        "typed-null",
+        "untyped-null",
         "unmapped-value",
     ],
 )
@@ -399,8 +400,10 @@ def test_dataset_level_missing_field_uses_the_distinct_compact_finding_form(
         lambda result: result["record_key_fields"].update(canonical=["wrong"]),
     ],
     ids=[
-        "run-phase-disagreement", "record-count-disagreement",
-        "finding-total-disagreement", "nonsequential-finding-id",
+        "run-phase-disagreement",
+        "record-count-disagreement",
+        "finding-total-disagreement",
+        "nonsequential-finding-id",
         "wrong-canonical-key-name",
     ],
 )
@@ -421,7 +424,8 @@ def test_semantic_validation_rejects_internally_incoherent_results(
 
     with pytest.raises(ResultValidationError):
         validate_result(
-            invalid, configuration_bytes=evidence.configuration_bytes,
+            invalid,
+            configuration_bytes=evidence.configuration_bytes,
             prepared=prepared,
         )
 
@@ -436,7 +440,8 @@ def test_semantic_validation_rejects_internally_incoherent_results(
         ),
     ],
     ids=[
-        "wrong-matched-value-count", "incomplete-without-blocked-values",
+        "wrong-matched-value-count",
+        "incomplete-without-blocked-values",
     ],
 )
 def test_semantic_validation_reconciles_opportunities_and_values_status(
@@ -456,7 +461,8 @@ def test_semantic_validation_reconciles_opportunities_and_values_status(
 
     with pytest.raises(ResultValidationError):
         validate_result(
-            invalid, configuration_bytes=evidence.configuration_bytes,
+            invalid,
+            configuration_bytes=evidence.configuration_bytes,
             prepared=prepared,
         )
 
@@ -589,7 +595,11 @@ def test_finding_total_order_coalesces_duplicates_before_assigning_ids(
         ),
     ],
     ids=[
-        "integer", "string", "boolean", "date", "datetime",
+        "integer",
+        "string",
+        "boolean",
+        "date",
+        "datetime",
         "list-of-decimals",
     ],
 )
@@ -631,14 +641,8 @@ def test_untyped_recursive_source_evidence_is_lossless_and_ordered(
     """Preserved arrays and objects retain recursively typed source evidence."""
     prepared = _prepare(
         tmp_path,
-        (
-            '[{"record_id":"S1","payload":'
-            '{"z":[1,null],"a":true}}]'
-        ),
-        (
-            '[{"record_id":"S1","payload":'
-            '{"a":false,"z":[1,null]}}]'
-        ),
+        ('[{"record_id":"S1","payload":{"z":[1,null],"a":true}}]'),
+        ('[{"record_id":"S1","payload":{"a":false,"z":[1,null]}}]'),
     )
 
     result = _assemble(prepared)
@@ -728,24 +732,33 @@ def test_canonical_serialization_is_utf8_ordered_and_newline_terminated(
     assert list(saved) == ["schema_version", "metadata", "fields"]
     assert list(saved["metadata"]) == ["id", "revision", "title"]
     assert list(saved["fields"]["definitions"]) == [
-        "measured_value", "record_id",
+        "measured_value",
+        "record_id",
     ]
     assert rendered.startswith(b'{\n  "schema_version": "1.0",\n')
     assert list(result) == [
-        "schema_version", "run", "phases", "software", "runtime", "inputs",
-        "record_key_fields", "comparison_configuration_digest", "summary",
-        "exclusions", "findings",
+        "schema_version",
+        "run",
+        "phases",
+        "software",
+        "runtime",
+        "inputs",
+        "record_key_fields",
+        "comparison_configuration_digest",
+        "summary",
+        "exclusions",
+        "findings",
     ]
     assert list(result["comparison_configuration_digest"]) == [
-        "algorithm", "value",
+        "algorithm",
+        "value",
     ]
-    assert result["comparison_configuration_digest"]["value"] == sha256(
-        configuration_bytes
-    ).hexdigest()
-    assert b'Caf\xc3\xa9 comparison' in configuration_bytes
-    assert "review_priority" not in (
-        saved["fields"]["definitions"]["measured_value"]
+    assert (
+        result["comparison_configuration_digest"]["value"]
+        == sha256(configuration_bytes).hexdigest()
     )
+    assert b"Caf\xc3\xa9 comparison" in configuration_bytes
+    assert "review_priority" not in (saved["fields"]["definitions"]["measured_value"])
     for stream, document in ((rendered, result), (configuration_bytes, saved)):
         assert b"\\u00e9" not in stream
         assert b"\r" not in stream
@@ -787,9 +800,7 @@ def test_repeated_and_record_reordered_runs_preserve_the_comparison_outcome(
     first_result = first_evidence.document()
     repeated_result = repeated_evidence.document()
     reordered_result = reordered_evidence.document()
-    assert first_evidence.configuration_bytes == (
-        repeated_evidence.configuration_bytes
-    )
+    assert first_evidence.configuration_bytes == (repeated_evidence.configuration_bytes)
     assert first_evidence.configuration_bytes == (
         reordered_evidence.configuration_bytes
     )
@@ -799,13 +810,9 @@ def test_repeated_and_record_reordered_runs_preserve_the_comparison_outcome(
         first_result["comparison_configuration_digest"]
         == reordered_result["comparison_configuration_digest"]
     )
-    assert _comparison_outcome(first_result) == _comparison_outcome(
-        reordered_result
-    )
+    assert _comparison_outcome(first_result) == _comparison_outcome(reordered_result)
     assert first_result["inputs"] != reordered_result["inputs"]
-    assert [
-        finding["source_locations"] for finding in first_result["findings"]
-    ] != [
+    assert [finding["source_locations"] for finding in first_result["findings"]] != [
         finding["source_locations"] for finding in reordered_result["findings"]
     ]
 
@@ -853,9 +860,7 @@ def test_full_validation_requires_the_configuration_context() -> None:
 def test_configuration_identity_is_taken_from_the_saved_document() -> None:
     """Configuration metadata has one authoritative location in the package."""
     configuration = minimal_configuration()
-    configuration["metadata"].update(
-        id="org.example.other-rules", revision="7"
-    )
+    configuration["metadata"].update(id="org.example.other-rules", revision="7")
     configuration_bytes = (json.dumps(configuration) + "\n").encode("utf-8")
     document = minimal_result()
     document["comparison_configuration_digest"]["value"] = sha256(
@@ -879,9 +884,10 @@ def test_configuration_byte_changes_invalidate_an_unchanged_digest(
         configuration = json.loads(original)
         configuration["metadata"]["revision"] = "changed"
         changed = json.dumps(configuration).encode("utf-8")
-    assert sha256(changed).hexdigest() != document[
-        "comparison_configuration_digest"
-    ]["value"]
+    assert (
+        sha256(changed).hexdigest()
+        != document["comparison_configuration_digest"]["value"]
+    )
 
     with pytest.raises(ResultValidationError):
         validate_result(document, configuration_bytes=changed)
@@ -889,8 +895,15 @@ def test_configuration_byte_changes_invalidate_an_unchanged_digest(
 
 @pytest.mark.parametrize(
     "defect",
-    ["syntax", "encoding", "duplicate-member", "non-finite", "unknown-version",
-     "structure", "key-not-required"],
+    [
+        "syntax",
+        "encoding",
+        "duplicate-member",
+        "non-finite",
+        "unknown-version",
+        "structure",
+        "key-not-required",
+    ],
 )
 def test_full_validation_rejects_invalid_configuration_with_matching_digest(
     defect: str,
@@ -905,7 +918,8 @@ def test_full_validation_rejects_invalid_configuration_with_matching_digest(
     elif defect == "duplicate-member":
         configuration_bytes = configuration_bytes.replace(
             b'"schema_version": "1.0",',
-            b'"schema_version": "1.0", "schema_version": "1.0",', 1,
+            b'"schema_version": "1.0", "schema_version": "1.0",',
+            1,
         )
     elif defect == "non-finite":
         configuration["metadata"]["title"] = float("nan")
@@ -932,9 +946,7 @@ def test_full_validation_rejects_invalid_configuration_with_matching_digest(
         validate_result(document, configuration_bytes=configuration_bytes)
 
 
-@pytest.mark.parametrize(
-    "contradiction", ["key-source", "priority", "scope", "field"]
-)
+@pytest.mark.parametrize("contradiction", ["key-source", "priority", "scope", "field"])
 def test_full_validation_rejects_cross_document_semantic_contradictions(
     contradiction: str,
 ) -> None:

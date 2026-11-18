@@ -42,11 +42,7 @@ def _relative_sdist_members(archive: Path) -> set[str]:
     roots = {member.partition("/")[0] for member in members}
     assert len(roots) == 1
     root = roots.pop()
-    return {
-        member.removeprefix(f"{root}/")
-        for member in members
-        if member != root
-    }
+    return {member.removeprefix(f"{root}/") for member in members if member != root}
 
 
 def _installed_python(environment: Path) -> Path:
@@ -57,9 +53,7 @@ def _installed_python(environment: Path) -> Path:
 
 def _installed_executable(environment: Path) -> Path:
     """Return the installed adviso-compare command on this platform."""
-    executable = (
-        "adviso-compare.exe" if sys.platform == "win32" else "adviso-compare"
-    )
+    executable = "adviso-compare.exe" if sys.platform == "win32" else "adviso-compare"
     scripts = "Scripts" if sys.platform == "win32" else "bin"
     return environment / scripts / executable
 
@@ -107,9 +101,7 @@ def test_distributions_and_installed_executable_cover_the_product_path(
     with zipfile.ZipFile(wheel) as distribution:
         wheel_members = set(distribution.namelist())
         metadata_member = next(
-            member
-            for member in wheel_members
-            if member.endswith(".dist-info/METADATA")
+            member for member in wheel_members if member.endswith(".dist-info/METADATA")
         )
         metadata = BytesParser().parsebytes(distribution.read(metadata_member))
         record_member = next(
@@ -125,9 +117,7 @@ def test_distributions_and_installed_executable_cover_the_product_path(
         any(member.endswith(path) for member in wheel_members)
         for path in REQUIRED_DOCUMENTATION_MEMBERS
     )
-    assert {
-        f"src/{member}" for member in REQUIRED_PACKAGE_MEMBERS
-    } <= sdist_members
+    assert {f"src/{member}" for member in REQUIRED_PACKAGE_MEMBERS} <= sdist_members
     assert {
         "docs/user-guide.md",
         "docs/examples/automatic/query.csv",
@@ -187,16 +177,15 @@ def test_distributions_and_installed_executable_cover_the_product_path(
         text=True,
         env=runtime_environment,
     )
-    installed_guide = (
-        environment / "share" / "doc" / "adviso-compare" / "user-guide.md"
-    )
+    installed_guide = environment / "share" / "doc" / "adviso-compare" / "user-guide.md"
     assert installed_guide.is_file()
     assert "# `adviso-compare` user guide" in installed_guide.read_text(
         encoding="utf-8"
     )
-    assert installed_guide.read_bytes() == (
-        project_root / "docs" / "user-guide.md"
-    ).read_bytes()
+    assert (
+        installed_guide.read_bytes()
+        == (project_root / "docs" / "user-guide.md").read_bytes()
+    )
 
     executable = _installed_executable(environment)
     installed_location_check = (
@@ -270,8 +259,7 @@ def test_distributions_and_installed_executable_cover_the_product_path(
     displayed = Path(automatic_output.name) / automatic_package.name
     assert f"Evidence package: {displayed}\n" in completed.stdout
     original_bytes = {
-        member.name: member.read_bytes()
-        for member in automatic_package.iterdir()
+        member.name: member.read_bytes() for member in automatic_package.iterdir()
     }
     repeated = subprocess.run(
         completed.args,
@@ -289,8 +277,7 @@ def test_distributions_and_installed_executable_cover_the_product_path(
     assert f"Evidence package: {displayed}\n" in repeated.stdout
     assert str(tmp_path) not in repeated.stdout
     assert {
-        member.name: member.read_bytes()
-        for member in automatic_package.iterdir()
+        member.name: member.read_bytes() for member in automatic_package.iterdir()
     } == original_bytes
 
     custom = tmp_path / "custom"
@@ -330,11 +317,14 @@ def test_distributions_and_installed_executable_cover_the_product_path(
     assert "Run status: incomplete\n" in incomplete.stdout
     assert str(tmp_path) not in incomplete.stdout
     custom_package = assert_run_package(custom_output)
-    assert json.loads(
-        (custom_package / "comparison-configuration.json").read_text(
-            encoding="utf-8"
+    assert (
+        json.loads(
+            (custom_package / "comparison-configuration.json").read_text(
+                encoding="utf-8"
+            )
         )
-    ) == minimal_configuration()
+        == minimal_configuration()
+    )
     assert (
         f"Evidence package: {Path(custom_output.name) / custom_package.name}\n"
         in incomplete.stdout

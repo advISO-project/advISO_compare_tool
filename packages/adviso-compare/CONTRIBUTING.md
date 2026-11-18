@@ -66,7 +66,9 @@ python -m compileall -q packages/adviso-compare/src packages/adviso-compare/test
 git diff --check
 ```
 
-No formatter, linter, or type checker is currently configured. The
+Ruff is configured for Python formatting and linting in `pyproject.toml` and is
+included in the development dependencies. Existing-code cleanup and CI
+enforcement are pending. No type checker is configured. The
 [CI workflow](../../.github/workflows/adviso-compare-ci.yml) runs the existing
 test, schema, example, build, and installed-product checks.
 

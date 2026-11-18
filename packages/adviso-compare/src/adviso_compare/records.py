@@ -389,10 +389,7 @@ def _source_identity_text(value: NativeValue) -> str:
 def _format_location(location: SourceLocation) -> str:
     """Render a non-sensitive source location for an execution diagnostic."""
     if isinstance(location, TabularLocation):
-        return (
-            f"record {location.record_number}, physical line "
-            f"{location.line_number}"
-        )
+        return f"record {location.record_number}, physical line {location.line_number}"
     if isinstance(location, JsonLocation):
         pointer = json.dumps(location.pointer, ensure_ascii=False)
         return f"JSON pointer {pointer}"

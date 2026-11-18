@@ -30,7 +30,8 @@ from tests.support.evidence import assert_run_package
         (["--configuration", "rules.yaml"], Path("rules.yaml")),
     ],
     ids=[
-        "automatic-mode", "custom-configuration",
+        "automatic-mode",
+        "custom-configuration",
     ],
 )
 def test_direct_arguments_create_an_immutable_invocation_without_reading_inputs(
@@ -114,7 +115,9 @@ def test_main_dispatches_the_invocation_through_an_injected_executor(
         (True, False, 0, "complete", 1, 0),
     ],
     ids=[
-        "custom-complete", "custom-incomplete", "automatic-complete",
+        "custom-complete",
+        "custom-incomplete",
+        "automatic-complete",
     ],
 )
 def test_cli_executes_custom_automatic_and_incomplete_comparisons_end_to_end(
@@ -197,7 +200,9 @@ def test_cli_executes_custom_automatic_and_incomplete_comparisons_end_to_end(
         ),
     ],
     ids=[
-        "configuration-error", "input-error", "record-key-error",
+        "configuration-error",
+        "input-error",
+        "record-key-error",
         "output-error",
     ],
 )
@@ -254,9 +259,11 @@ def test_expected_execution_errors_have_stable_diagnostics_and_exit_two(
     "failure", ["input", "configuration", "validation", "linkage", "html"]
 )
 @pytest.mark.parametrize(
-    "parent_exists", [False, True],
+    "parent_exists",
+    [False, True],
     ids=[
-        "new-parent", "existing-parent",
+        "new-parent",
+        "existing-parent",
     ],
 )
 def test_default_executor_errors_preserve_existing_content_without_new_output(
@@ -276,8 +283,12 @@ def test_default_executor_errors_preserve_existing_content_without_new_output(
     query = tmp_path / "query.json"
     query.write_text('[{"record_id":"S1","result":1}]', encoding="utf-8")
     arguments = [
-        "--reference", str(reference), "--query", str(query),
-        "--output", str(output),
+        "--reference",
+        str(reference),
+        "--query",
+        str(query),
+        "--output",
+        str(output),
     ]
     if failure != "input":
         reference.write_bytes(query.read_bytes())
@@ -314,9 +325,7 @@ def test_default_executor_errors_preserve_existing_content_without_new_output(
     }[failure]
     if failure in {"validation", "linkage", "html"}:
         assert failure_attempted
-    assert exit_code == (
-        3 if failure in {"validation", "linkage", "html"} else 2
-    )
+    assert exit_code == (3 if failure in {"validation", "linkage", "html"} else 2)
     assert captured.out == ""
     assert captured.err.startswith(f"ERROR [{expected_code}]: ")
     assert captured.err.count("\n") == 1
@@ -349,7 +358,8 @@ def test_default_executor_errors_preserve_existing_content_without_new_output(
         ),
     ],
     ids=[
-        "memory-exhaustion", "unexpected-validation-error",
+        "memory-exhaustion",
+        "unexpected-validation-error",
     ],
 )
 def test_resource_exhaustion_and_unexpected_failures_are_safely_isolated(

@@ -32,7 +32,9 @@ EXAMPLES = PROJECT_ROOT / "docs" / "examples"
         ("custom", "reference.json", "query.csv", "configuration.yaml"),
     ],
     ids=[
-        "automatic", "introductory-custom", "custom-transformations",
+        "automatic",
+        "introductory-custom",
+        "custom-transformations",
     ],
 )
 def test_user_guide_examples_run_with_the_documented_outcome(
@@ -43,9 +45,7 @@ def test_user_guide_examples_run_with_the_documented_outcome(
     configuration_name: str | None,
 ) -> None:
     """Each guide example is runnable and produces schema-valid evidence."""
-    guide = (PROJECT_ROOT / "docs" / "user-guide.md").read_text(
-        encoding="utf-8"
-    )
+    guide = (PROJECT_ROOT / "docs" / "user-guide.md").read_text(encoding="utf-8")
     working = tmp_path / example
     if example == "introductory":
         assert configuration_name is not None
@@ -80,16 +80,12 @@ def test_user_guide_examples_run_with_the_documented_outcome(
     )
     selected = assert_run_package(working / "evidence", outcome.output)
     result = json.loads(
-        (selected / "comparison-results.json").read_text(
-            encoding="utf-8"
-        )
+        (selected / "comparison-results.json").read_text(encoding="utf-8")
     )
 
     results_validator().validate(result)
     saved = json.loads(
-        (selected / "comparison-configuration.json").read_text(
-            encoding="utf-8"
-        )
+        (selected / "comparison-configuration.json").read_text(encoding="utf-8")
     )
     if configuration is not None:
         assert saved == document
@@ -99,8 +95,7 @@ def test_user_guide_examples_run_with_the_documented_outcome(
     assert outcome.comparison_differences == (3 if example == "custom" else 1)
     if example == "custom":
         assert [
-            (finding["record_identity"]["canonical"], finding["field"],
-             finding["code"])
+            (finding["record_identity"]["canonical"], finding["field"], finding["code"])
             for finding in result["findings"]
         ] == [
             (["SAMPLE-001"], "interpretation", "value_mismatch"),
@@ -114,18 +109,21 @@ def test_user_guide_examples_run_with_the_documented_outcome(
     assert outcome.assessment_issues == 0
     assert outcome.exit_code == 0
     label = {
-        "automatic": "automatic", "introductory": "small custom",
+        "automatic": "automatic",
+        "introductory": "small custom",
         "custom": "custom with transformations",
     }[example]
     outcome_row = next(
         line for line in guide.splitlines() if line.startswith(f"| {label} (Section")
     )
     assert [cell.strip() for cell in outcome_row.split("|")[2:-1]] == [
-        "`complete`", str(outcome.comparison_differences), "0",
+        "`complete`",
+        str(outcome.comparison_differences),
+        "0",
     ]
-    validation_section = guide.split(
-        " Structural and semantic validation\n", 1
-    )[1].split("\n## ", 1)[0]
+    validation_section = guide.split(" Structural and semantic validation\n", 1)[
+        1
+    ].split("\n## ", 1)[0]
     snippets = re.findall(r"```python\n(.*?)\n```", validation_section, re.S)
     assert len(snippets) == 1
     checked = subprocess.run(
@@ -146,9 +144,7 @@ def test_configuration_fragments_fit_a_complete_field_definition(
     tmp_path: Path, heading: str
 ) -> None:
     """Guide fragments can be inserted into a configuration and validated."""
-    guide = (PROJECT_ROOT / "docs" / "user-guide.md").read_text(
-        encoding="utf-8"
-    )
+    guide = (PROJECT_ROOT / "docs" / "user-guide.md").read_text(encoding="utf-8")
     section = guide.split(f" {heading}\n", 1)[1].split("\n### ", 1)[0]
     snippets = re.findall(r"```yaml\n(.*?)\n```", section, re.S)
     assert len(snippets) == 1

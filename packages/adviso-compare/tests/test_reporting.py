@@ -37,7 +37,9 @@ from adviso_compare.results import (
 )
 from adviso_compare.values import compare_values
 from tests.support.documents import (
-    minimal_configuration, minimal_configuration_bytes, minimal_result,
+    minimal_configuration,
+    minimal_configuration_bytes,
+    minimal_result,
 )
 from tests.support.schemas import configuration_validator, results_validator
 
@@ -55,24 +57,21 @@ def _generated_evidence(
     """Generate canonical evidence through all three comparison phases."""
     tmp_path.mkdir(parents=True, exist_ok=True)
     if automatic:
-        reference_text = json.dumps([
-            {"record_id": "S1", "result": reference_value}
-        ])
-        query_text = json.dumps([
-            {"record_id": "S1", "result": query_value}
-        ])
+        reference_text = json.dumps([{"record_id": "S1", "result": reference_value}])
+        query_text = json.dumps([{"record_id": "S1", "result": query_value}])
         configuration = None
     else:
         configuration = (
             minimal_configuration()
-            if configuration_document is None else configuration_document
+            if configuration_document is None
+            else configuration_document
         )
         sources = configuration["fields"]["definitions"]["measured_value"][
             "source_fields"
         ]
-        reference_text = json.dumps([
-            {"reference_id": "S1", sources["reference"]: reference_value}
-        ])
+        reference_text = json.dumps(
+            [{"reference_id": "S1", sources["reference"]: reference_value}]
+        )
         query_record: dict[str, object] = {"query_id": "S1"}
         if not incomplete:
             query_record[sources["query"]] = query_value
@@ -154,9 +153,7 @@ class _ReportView(HTMLParser):
         self.in_finding = False
         self.feed(report)
 
-    def handle_starttag(
-        self, tag: str, attrs: list[tuple[str, str | None]]
-    ) -> None:
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         attributes = dict(attrs)
         if attributes.get("id"):
             self.ids.append(attributes["id"])
@@ -192,9 +189,7 @@ def test_html_report_is_a_self_contained_view_of_both_json_documents() -> None:
         }
     ]
 
-    report = render_html_report(
-        result, minimal_configuration()
-    ).decode("utf-8")
+    report = render_html_report(result, minimal_configuration()).decode("utf-8")
 
     assert report.startswith("<!doctype html>\n")
     assert "<title>adviso-compare evidence report</title>" in report
@@ -241,9 +236,9 @@ def test_automatic_mode_report_explains_its_limits(tmp_path: Path) -> None:
     evidence = _generated_evidence(tmp_path, automatic=True)
     result = evidence.document()
 
-    report = render_html_report(
-        result, evidence.configuration_document()
-    ).decode("utf-8")
+    report = render_html_report(result, evidence.configuration_document()).decode(
+        "utf-8"
+    )
 
     assert "Automatic strict-exact mode" in report
     assert "identically named fields observed on both sides" in report
@@ -278,31 +273,47 @@ def test_value_mismatch_is_readable_without_expanding_structured_evidence(
         ("-100", "-111", {"relative_tolerance": "0.1"}, False, "11", "10"),
         ("0", "0.001", {"relative_tolerance": "0.05"}, False, "0.001", "0"),
         ("2.50049", "2.70001", {"absolute_tolerance": "0.1"}, True, "0.2", "0.1"),
-        ("1.00000000000000000000000000001", "1.00000000000000000000000000003",
-         {"absolute_tolerance": "0.00000000000000000000000000001"}, False,
-         "0.00000000000000000000000000002", "0.00000000000000000000000000001"),
+        (
+            "1.00000000000000000000000000001",
+            "1.00000000000000000000000000003",
+            {"absolute_tolerance": "0.00000000000000000000000000001"},
+            False,
+            "0.00000000000000000000000000002",
+            "0.00000000000000000000000000001",
+        ),
     ],
     ids=[
-        "absolute-tolerance", "relative-negative-reference",
-        "relative-zero-reference", "post-quantisation",
+        "absolute-tolerance",
+        "relative-negative-reference",
+        "relative-zero-reference",
+        "post-quantisation",
         "precision-beyond-default-context",
     ],
 )
 def test_tolerance_finding_explains_exact_translated_difference_and_limit(
-    tmp_path: Path, reference: str, query: str, parameters: dict[str, str],
-    quantise: bool, difference: str, limit: str,
+    tmp_path: Path,
+    reference: str,
+    query: str,
+    parameters: dict[str, str],
+    quantise: bool,
+    difference: str,
+    limit: str,
 ) -> None:
     """Use recorded translated numbers and the reference-directed rule."""
     configuration = minimal_configuration()
     field = configuration["fields"]["definitions"]["measured_value"]
     field["comparator"] = {"name": "numeric_tolerance", "parameters": parameters}
     if quantise:
-        field["typed_normalisation"] = [{
-            "operation": "decimal_quantise",
-            "parameters": {"places": 3, "rounding": "half_even"},
-        }]
+        field["typed_normalisation"] = [
+            {
+                "operation": "decimal_quantise",
+                "parameters": {"places": 3, "rounding": "half_even"},
+            }
+        ]
     evidence = _generated_evidence(
-        tmp_path, reference_value=reference, query_value=query,
+        tmp_path,
+        reference_value=reference,
+        query_value=query,
         configuration_document=configuration,
     )
     original = evidence.json_bytes
@@ -331,7 +342,8 @@ def test_finding_source_field_names_are_escaped_in_headings_and_tables(
     """Source-oriented labels retain literal field names without HTML markup."""
     configuration = minimal_configuration()
     configuration["fields"]["definitions"]["measured_value"]["source_fields"] = {
-        "reference": "expected<value>", "query": "observed<script>&value",
+        "reference": "expected<value>",
+        "query": "observed<script>&value",
     }
     evidence = _generated_evidence(tmp_path, configuration_document=configuration)
     report = render_html_report(
@@ -351,11 +363,16 @@ def test_finding_source_field_names_are_escaped_in_headings_and_tables(
         (None, "", ["Null (present)", '""', "string"]),
         (1, "1", ["integer", "string", '"1"']),
         (True, False, ["boolean", "true", "false"]),
-        ([1, None], {"x": [False, "<script>"]},
-         ["array", "object", "[1, null]", '<script>']),
+        (
+            [1, None],
+            {"x": [False, "<script>"]},
+            ["array", "object", "[1, null]", "<script>"],
+        ),
     ],
     ids=[
-        "null-versus-empty-string", "integer-versus-string", "boolean-values",
+        "null-versus-empty-string",
+        "integer-versus-string",
+        "boolean-values",
         "nested-array-versus-object",
     ],
 )
@@ -364,8 +381,10 @@ def test_untyped_finding_values_preserve_types_and_nested_content(
 ) -> None:
     """Distinguish null, text, booleans and nested structures."""
     evidence = _generated_evidence(
-        tmp_path, automatic=True,
-        reference_value=reference, query_value=query,
+        tmp_path,
+        automatic=True,
+        reference_value=reference,
+        query_value=query,
     )
     report = render_html_report(
         evidence.document(), evidence.configuration_document()
@@ -380,9 +399,9 @@ def test_untyped_finding_values_preserve_types_and_nested_content(
 
 def test_empty_report_retains_navigation_and_empty_finding_groups() -> None:
     """A zero-finding run still presents coverage and empty groups."""
-    report = render_html_report(
-        minimal_result(), minimal_configuration()
-    ).decode("utf-8")
+    report = render_html_report(minimal_result(), minimal_configuration()).decode(
+        "utf-8"
+    )
     view = _ReportView(report)
 
     assert set(view.links) <= set(view.ids)
@@ -392,8 +411,12 @@ def test_empty_report_retains_navigation_and_empty_finding_groups() -> None:
 
 
 def _render_input_comparison(
-    tmp_path: Path, reference_text: str, query_text: str,
-    configuration: dict[str, Any], *, suffix: str = "json",
+    tmp_path: Path,
+    reference_text: str,
+    query_text: str,
+    configuration: dict[str, Any],
+    *,
+    suffix: str = "json",
 ) -> str:
     """Run synthetic inputs and return their published HTML for finding checks."""
     reference = tmp_path / f"reference.{suffix}"
@@ -402,10 +425,14 @@ def _render_input_comparison(
     query.write_text(query_text, encoding="utf-8")
     rules = tmp_path / "configuration.yaml"
     rules.write_text(yaml.safe_dump(configuration), encoding="utf-8")
-    outcome = execute_comparison(ComparisonInvocation(
-        reference=reference, query=query, configuration=rules,
-        output=tmp_path / "evidence",
-    ))
+    outcome = execute_comparison(
+        ComparisonInvocation(
+            reference=reference,
+            query=query,
+            configuration=rules,
+            output=tmp_path / "evidence",
+        )
+    )
     return (outcome.output / "comparison-report.html").read_text("utf-8")
 
 
@@ -414,7 +441,9 @@ def test_missing_record_finding_identifies_absent_query_record(
 ) -> None:
     """A missing counterpart is explained without invented value evidence."""
     report = _render_input_comparison(
-        tmp_path, '[{"reference_id":"S1","expected_value":1}]', "[]",
+        tmp_path,
+        '[{"reference_id":"S1","expected_value":1}]',
+        "[]",
         minimal_configuration(),
     )
     text = " ".join(" ".join(_ReportView(report).findings).split())
@@ -428,8 +457,11 @@ def test_dataset_field_finding_has_no_record_or_value_evidence(
 ) -> None:
     """A missing required header is reported without inventing a record."""
     report = _render_input_comparison(
-        tmp_path, "reference_id,expected_value\n", "query_id\n",
-        minimal_configuration(), suffix="csv",
+        tmp_path,
+        "reference_id,expected_value\n",
+        "query_id\n",
+        minimal_configuration(),
+        suffix="csv",
     )
     text = " ".join(" ".join(_ReportView(report).findings).split())
 
@@ -445,13 +477,16 @@ def test_list_difference_explains_positional_comparison(tmp_path: Path) -> None:
     configuration = minimal_configuration()
     field = configuration["fields"]["definitions"]["measured_value"]
     field["logical_type"] = {
-        "collection_type": "list", "element_type": "string",
+        "collection_type": "list",
+        "element_type": "string",
         "element_comparator": {"name": "typed_exact"},
     }
     field["comparator"] = {"name": "list_exact"}
     report = _render_input_comparison(
-        tmp_path, '[{"reference_id":"S1","expected_value":["WT"]}]',
-        '[{"query_id":"S1","observed_value":["WT","MUT"]}]', configuration,
+        tmp_path,
+        '[{"reference_id":"S1","expected_value":["WT"]}]',
+        '[{"query_id":"S1","observed_value":["WT","MUT"]}]',
+        configuration,
     )
     text = " ".join(" ".join(_ReportView(report).findings).split())
 
@@ -464,38 +499,57 @@ def test_list_difference_explains_positional_comparison(tmp_path: Path) -> None:
     ("query_value_json", "field_changes", "expected"),
     [
         pytest.param(
-            "null", {},
-            ["Null policy violation", "Null (present)", "decimal",
-             "does not allow null values"],
+            "null",
+            {},
+            [
+                "Null policy violation",
+                "Null (present)",
+                "decimal",
+                "does not allow null values",
+            ],
             id="null-policy-violation",
         ),
         pytest.param(
-            "[]", {}, ["Type mismatch", "source type", "decimal"],
+            "[]",
+            {},
+            ["Type mismatch", "source type", "decimal"],
             id="incompatible-source-type",
         ),
         pytest.param(
-            '\"not a number\"', {}, ["Invalid field value", "valid decimal"],
+            '"not a number"',
+            {},
+            ["Invalid field value", "valid decimal"],
             id="invalid-decimal-text",
         ),
         pytest.param(
-            "2", {"value_mapping": {"query": [
-                {"from": {"category": "integer", "value": "1"},
-                 "to": {"category": "integer", "value": "1"}}
-            ]}},
+            "2",
+            {
+                "value_mapping": {
+                    "query": [
+                        {
+                            "from": {"category": "integer", "value": "1"},
+                            "to": {"category": "integer", "value": "1"},
+                        }
+                    ]
+                }
+            },
             ["Mapping failure", "no entry in the configured mapping"],
             id="unmapped-source-value",
         ),
     ],
 )
 def test_assessment_issues_explain_the_configured_field_failure(
-    tmp_path: Path, query_value_json: str,
-    field_changes: dict[str, Any], expected: list[str],
+    tmp_path: Path,
+    query_value_json: str,
+    field_changes: dict[str, Any],
+    expected: list[str],
 ) -> None:
     """Field assessment issues explain the applicable rule and recorded evidence."""
     configuration = minimal_configuration()
     configuration["fields"]["definitions"]["measured_value"].update(field_changes)
     report = _render_input_comparison(
-        tmp_path, '[{"reference_id":"S1","expected_value":1}]',
+        tmp_path,
+        '[{"reference_id":"S1","expected_value":1}]',
         f'[{{"query_id":"S1","observed_value":{query_value_json}}}]',
         configuration,
     )
@@ -513,8 +567,10 @@ def test_null_comparison_explains_why_two_nulls_do_not_match(
     field = configuration["fields"]["definitions"]["measured_value"]
     field["null_policy"] = {"allowed": True, "nulls_equal": False}
     report = _render_input_comparison(
-        tmp_path, '[{"reference_id":"S1","expected_value":null}]',
-        '[{"query_id":"S1","observed_value":null}]', configuration,
+        tmp_path,
+        '[{"reference_id":"S1","expected_value":null}]',
+        '[{"query_id":"S1","observed_value":null}]',
+        configuration,
     )
     text = " ".join(" ".join(_ReportView(report).findings).split())
 
@@ -525,9 +581,11 @@ def test_null_comparison_explains_why_two_nulls_do_not_match(
 
 @pytest.mark.parametrize("status", ["complete", "incomplete"])
 @pytest.mark.parametrize(
-    "parent_exists", [False, True],
+    "parent_exists",
+    [False, True],
     ids=[
-        "new-parent", "existing-parent",
+        "new-parent",
+        "existing-parent",
     ],
 )
 def test_publication_creates_exact_private_three_file_package(
@@ -555,20 +613,15 @@ def test_publication_creates_exact_private_three_file_package(
         "comparison-report.html",
         "comparison-results.json",
     ]
+    assert (selected / "comparison-results.json").read_bytes() == evidence.json_bytes
     assert (
-        selected / "comparison-results.json"
-    ).read_bytes() == evidence.json_bytes
-    assert json.loads(
-        (selected / "comparison-results.json").read_text(encoding="utf-8")
-    ) == result
-    assert (
-        selected / "comparison-report.html"
-    ).read_bytes() == render_html_report(
+        json.loads((selected / "comparison-results.json").read_text(encoding="utf-8"))
+        == result
+    )
+    assert (selected / "comparison-report.html").read_bytes() == render_html_report(
         result, evidence.configuration_document()
     )
-    configuration_bytes = (
-        selected / "comparison-configuration.json"
-    ).read_bytes()
+    configuration_bytes = (selected / "comparison-configuration.json").read_bytes()
     assert configuration_bytes == evidence.configuration_bytes
     configuration_validator().validate(json.loads(configuration_bytes))
     assert result["comparison_configuration_digest"] == {
@@ -590,8 +643,11 @@ def test_publication_creates_exact_private_three_file_package(
 @pytest.mark.parametrize(
     "parent_kind",
     [
-        "file", "symlink", "dangling_symlink",
-        "empty_directory", "populated_directory",
+        "file",
+        "symlink",
+        "dangling_symlink",
+        "empty_directory",
+        "populated_directory",
     ],
 )
 def test_output_parent_eligibility_depends_on_its_kind_not_its_contents(
@@ -670,9 +726,7 @@ def test_successive_runs_with_the_same_timestamp_preserve_each_package(
     )
     assert set(parent.iterdir()) == {original, selected}
     assert _snapshot(original) == before
-    assert (
-        selected / "comparison-results.json"
-    ).read_bytes() == second.json_bytes
+    assert (selected / "comparison-results.json").read_bytes() == second.json_bytes
 
 
 @pytest.mark.parametrize("failure", ["publication", "unsupported_rename"])
@@ -700,9 +754,7 @@ def test_failed_second_publication_preserves_content_and_cleans_staging(
     def fail_publication(stage: Path, destination: Path) -> None:
         nonlocal publication_attempted
         publication_attempted = True
-        assert (
-            stage / "comparison-results.json"
-        ).read_bytes() == second.json_bytes
+        assert (stage / "comparison-results.json").read_bytes() == second.json_bytes
         assert (stage / "comparison-report.html").is_file()
         assert (stage / "comparison-configuration.json").read_bytes() == (
             second.configuration_bytes
@@ -732,8 +784,10 @@ def test_failed_second_publication_preserves_content_and_cleans_staging(
 
 
 @pytest.mark.parametrize(
-    "failure_member", [
-        "comparison-results.json", "comparison-configuration.json",
+    "failure_member",
+    [
+        "comparison-results.json",
+        "comparison-configuration.json",
         "comparison-report.html",
     ],
 )
@@ -757,9 +811,7 @@ def test_failed_initial_write_publishes_nothing_and_cleans_staging(
             raise OSError("injected write fault")
         real_write(path, content)
 
-    monkeypatch.setattr(
-        reporting, "_write_atomic_member", fail_selected_member
-    )
+    monkeypatch.setattr(reporting, "_write_atomic_member", fail_selected_member)
 
     with pytest.raises(OutputError) as raised:
         _publish(parent, evidence)
@@ -878,9 +930,11 @@ def test_parent_creation_permission_failure_is_a_write_error(
 
 
 @pytest.mark.parametrize(
-    "parent_exists", [False, True],
+    "parent_exists",
+    [False, True],
     ids=[
-        "new-parent", "existing-parent",
+        "new-parent",
+        "existing-parent",
     ],
 )
 def test_concurrent_runs_publish_independently_under_the_same_parent(
@@ -912,30 +966,25 @@ def test_concurrent_runs_publish_independently_under_the_same_parent(
     for child, result in zip(selected, evidence):
         assert child.parent == parent
         assert sorted(path.name for path in child.iterdir()) == [
-            "comparison-configuration.json", "comparison-report.html",
+            "comparison-configuration.json",
+            "comparison-report.html",
             "comparison-results.json",
         ]
-        assert (
-            child / "comparison-results.json"
-        ).read_bytes() == result.json_bytes
-        assert (
-            child / "comparison-report.html"
-        ).read_bytes() == render_html_report(
+        assert (child / "comparison-results.json").read_bytes() == result.json_bytes
+        assert (child / "comparison-report.html").read_bytes() == render_html_report(
             result.document(), result.configuration_document()
         )
         assert (child / "comparison-configuration.json").read_bytes() == (
             result.configuration_bytes
         )
         digest = result.document()["comparison_configuration_digest"]
-        assert digest["value"] == (
-            sha256(result.configuration_bytes).hexdigest()
-        )
+        assert digest["value"] == (sha256(result.configuration_bytes).hexdigest())
     assert not list(tmp_path.glob(".evidence.*"))
 
 
 @pytest.mark.parametrize(
-    "defect", ["missing", "unreadable", "symlink", "directory", "wrong-name",
-               "digest-mismatch"],
+    "defect",
+    ["missing", "unreadable", "symlink", "directory", "wrong-name", "digest-mismatch"],
 )
 def test_package_inspection_rejects_invalid_configuration_files(
     tmp_path: Path,
