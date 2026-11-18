@@ -206,7 +206,7 @@ the guide, schemas, examples, and implementation blocks release.
 ## Continuous integration
 
 The workflow runs on pull requests targeting `main` (including updates to those
-pull requests), pushes to `main`, Tuesdays at 04:23 UTC, and manual requests.
+pull requests), pushes to `main`, and manual requests.
 Pushes to development branches without an open pull request do not trigger it.
 It does not publish releases.
 
@@ -226,8 +226,8 @@ in the verification matrix using these standard GitHub-hosted runners:
 | `macos-15` | ARM64 | 3.15 |
 | `windows-2025` | x86-64 | 3.15 |
 
-The same full suite and matrix apply to pull requests, `main`, scheduled runs,
-and manual runs. Linux is the fully supported deployment platform. Windows and
+The same full suite and matrix apply to pull requests, `main`, and manual runs.
+Linux is the fully supported deployment platform. Windows and
 macOS compatibility is checked on Python 3.15; other Python versions on those
 platforms are outside the verified matrix. No reduced test selection is used
 for any matrix job. Review this coverage when preparing a release or updating
@@ -239,7 +239,6 @@ each job records the platform, architecture, Python version, checked-out commit,
 and resolved test dependencies. The distribution tests also record dependencies
 for each clean installation. Every job installs the package normally, rather
 than relying on an editable source installation, before running the full suite.
-The scheduled run resolves dependencies afresh, just as pull-request runs do.
 
 Dependency version ranges are declared in `pyproject.toml`; there is no
 committed lockfile fixing the exact direct and indirect dependency versions.
