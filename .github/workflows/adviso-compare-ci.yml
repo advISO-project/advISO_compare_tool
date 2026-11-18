@@ -17,6 +17,39 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  quality:
+    name: adviso-compare / Ruff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+    steps:
+      - name: Check out source and version history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.11'
+
+      - name: Install package and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install './packages/adviso-compare[dev]'
+          python -m pip check
+
+      - name: Check Python formatting
+        run: python -m ruff format --check packages/adviso-compare
+
+      - name: Check Python lint rules
+        run: python -m ruff check packages/adviso-compare
+
   test:
     name: adviso-compare / ${{ matrix.os }} / Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
@@ -90,14 +123,17 @@ jobs:
 
   ci:
     name: adviso-compare CI passed
-    needs: test
+    needs: [test, quality]
     if: always()
     runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash
     steps:
-      - name: Require every matrix job to succeed
+      - name: Require every test job and Ruff to succeed
         env:
           MATRIX_RESULT: ${{ needs.test.result }}
-        run: test "$MATRIX_RESULT" = success
+          QUALITY_RESULT: ${{ needs.quality.result }}
+        run: |
+          test "$MATRIX_RESULT" = success
+          test "$QUALITY_RESULT" = success

@@ -66,11 +66,53 @@ python -m compileall -q packages/adviso-compare/src packages/adviso-compare/test
 git diff --check
 ```
 
-Ruff is configured for Python formatting and linting in `pyproject.toml` and is
-included in the development dependencies. CI enforcement is pending.
-No type checker is configured. The
-[CI workflow](../../.github/workflows/adviso-compare-ci.yml) runs the existing
-test, schema, example, build, and installed-product checks.
+The [CI workflow](../../.github/workflows/adviso-compare-ci.yml) requires Ruff
+formatting and lint checks alongside the test, schema, example, build, and
+installed-product checks. No type checker is configured.
+
+### Formatting and linting
+
+Ruff is included in the development dependencies and configured in
+`pyproject.toml`. Run the same checks as CI from the repository root:
+
+```console
+python -m ruff format --check packages/adviso-compare
+python -m ruff check packages/adviso-compare
+```
+
+To format code and apply available safe lint fixes locally:
+
+```console
+python -m ruff check --fix packages/adviso-compare
+python -m ruff format packages/adviso-compare
+```
+
+Review the resulting diff, address remaining findings, and rerun both checks.
+Do not apply unsafe fixes in bulk; inspect the behaviour each proposed change
+would affect. Run relevant tests for substantive corrections. Editor integration
+and pre-commit hooks are optional; the repository does not require either.
+
+Formatting uses an 88-character target and Python 3.11 syntax compatibility.
+Checks cover production Python and tests, excluding generated `_version.py`,
+virtual environments, and build outputs. The lint selection is explicit:
+
+| Rules | Purpose |
+| --- | --- |
+| `E4`, `E7`, `E9`, `F` | Basic errors, unused imports, and undefined names. |
+| `I` | Import ordering. |
+| `B` | Common bug-prone constructs. |
+| `UP` | Syntax modernisation compatible with Python 3.11. |
+
+`UP042` is excluded to retain the existing enums' string conversion behaviour;
+conversion to `StrEnum` is a separate behavioural decision. Other exceptions
+need a narrow scope and an explanation.
+
+The Ruff version is pinned in the package's development dependencies so local
+and CI checks use the same rules and formatter. Upgrade that pin deliberately:
+review release notes, assess new findings and formatting changes without writing
+files first, then review cleanup separately from behavioural changes. Rerun Ruff
+checks and the relevant test suite before merging an upgrade. Do not duplicate
+the version pin in editor settings, hooks, or CI installation commands.
 
 ### Test conventions
 
@@ -168,6 +210,12 @@ pull requests), pushes to `main`, Tuesdays at 04:23 UTC, and manual requests.
 Pushes to development branches without an open pull request do not trigger it.
 It does not publish releases.
 
+A separate `adviso-compare / Ruff` job runs formatting and lint checks once on
+`ubuntu-24.04` with CPython 3.11. It installs the development dependencies from
+the package, including the pinned Ruff version, and checks without modifying
+files. It runs alongside the seven runtime test configurations below; Ruff is
+not rerun in each matrix job.
+
 Each run executes the full suite, including schema/example checks, builds,
 and clean wheel/source-archive installation scenarios, on all seven combinations
 in the verification matrix using these standard GitHub-hosted runners:
@@ -225,8 +273,10 @@ path. The normal test command above lets pytest manage its own temporary path.
 After the workflow has run on GitHub, configure branch protection or a ruleset
 for `main` to require a pull request and the **`adviso-compare CI passed`** status
 check from GitHub Actions. This final job succeeds only when every matrix job
-succeeds. Enable the requirement for the branch to be up to date before merging
-so checks cover the current base branch. Another person's review approval is
+and the Ruff job succeed; failed, cancelled, or skipped dependencies do not pass
+the gate. The required status-check name remains the same. Enable the requirement
+for the branch to be up to date before merging so checks cover the current base
+branch. Another person's review approval is
 not required by this project's chosen merge policy.
 
 These settings are configured in GitHub, separately from the workflow file;
@@ -281,6 +331,7 @@ but does not publish them. Each release needs:
 
 - a fixed semantic version and immutable source identification;
 - passing full-suite CI on all seven combinations in the verification matrix;
+- passing Ruff formatting and lint checks;
 - passing documentation/example, schema, build, and installed-product checks;
 - release notes stating changes, known limitations, supported runtimes, and
   supported schema versions and combinations; and
@@ -304,9 +355,9 @@ Use this sequence:
    version from Git; check the resulting version rather than editing the
    generated `_version.py`. Never move a published release tag or replace its
    artefacts; corrections receive a new version.
-3. Run the CI workflow for the release tag and require all seven matrix jobs to
-   pass. Confirm the recorded source commit and built distribution versions are
-   those intended for release. Retain the JUnit results and environment and
+3. Run the CI workflow for the release tag and require all seven matrix jobs and
+   the Ruff job to pass. Confirm the recorded source commit and built distribution
+   versions are those intended for release. Retain the JUnit results and environment and
    dependency records before their 30-day CI retention expires. Matrix execution
    includes the controlled Unicode-sensitive and determinism tests; do not infer
    cross-platform verification from a local run alone.
