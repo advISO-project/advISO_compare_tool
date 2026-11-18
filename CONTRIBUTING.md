@@ -5,6 +5,10 @@ the package you intend to change under `packages/` and reading its README.
 Each tool owns its dependencies, development setup, tests, documentation, and
 release process. Use that tool's documented commands and runtime requirements.
 
+Each tool defines its dependency-management policy. Developers may use their
+preferred environment manager, provided the resulting environment supports the
+tool's documented installation and verification commands.
+
 The first tool is [`adviso-compare`](packages/adviso-compare/README.md).
 Its [development instructions](packages/adviso-compare/CONTRIBUTING.md)
 cover editable installation, testing, and building distributions.
@@ -21,8 +25,8 @@ cover editable installation, testing, and building distributions.
 | Package `docs/` | User documentation, architecture guidance, and applicable product/development records. |
 | Package `tests/` | Executable verification and controlled synthetic fixtures. |
 
-Keep tool-specific implementation and dependencies within the relevant package.
-A future tool can have a different dependency set or release schedule. Shared
+Tool-specific implementation and dependencies should be kept within the relevant package.
+Different tools can have a different dependency sets or release schedules. Shared
 code or tooling should follow a concrete need agreed for the affected packages.
 
 ## Working on a change
@@ -47,7 +51,6 @@ change-control, and testing guidance is in [AGENTS.md](AGENTS.md).
 
 ## Releases
 
-Release decisions belong to each tool. Consult its current verification records
-and declared support policy. A passing local suite is evidence for that
-environment; report separately any outstanding platform, dependency-installation,
-or independent-review checks.
+Release decisions belong to each tool. Consult its declared support policy.
+A passing local suite is evidence for that environment; report separately
+any outstanding platform, dependency-installation, or independent-review checks.

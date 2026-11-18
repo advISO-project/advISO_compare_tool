@@ -6,29 +6,9 @@ This file governs how agents work in this monorepo. It does not define product b
 
 ## Sources of truth
 
-For `adviso-compare`, authority is assigned by subject:
+Before working on a package, read its README and contribution guidance to identify its behavioural contract, authoritative schemas, development procedures, and verification requirements. Resolve inconsistencies explicitly rather than silently choosing an interpretation.
 
-- The packaged schemas in `packages/adviso-compare/src/adviso_compare/schemas/` define the permitted JSON structures and structural constraints for their respective document families.
-- `packages/adviso-compare/docs/user-guide.md` defines observable behaviour and semantic rules that the schemas cannot express.
-- `packages/adviso-compare/CONTRIBUTING.md` defines package development, verification, compatibility, and release procedures.
-- `packages/adviso-compare/docs/implementation-guide.md` explains the implementation; it does not define product behaviour.
-- Tests and controlled fixtures verify the documented contract; they do not override it or supply undocumented requirements.
-
-If these sources appear inconsistent, stop and report the exact conflict and its consequences. Do not silently choose an interpretation, weaken a requirement, or invent behaviour.
-
-## Repository layout
-
-- Keep each independently installable tool under `packages/<distribution-name>/`.
-- Give each tool its own `pyproject.toml`, README, `docs/`, `src/`, and `tests/`.
-- For `adviso-compare`, put production code and runtime resources under
-  `packages/adviso-compare/src/adviso_compare/`, tests under
-  `packages/adviso-compare/tests/`, and maintained product documentation under
-  `packages/adviso-compare/docs/`.
-- Keep repository-wide guidance at the repository root. Do not place
-  product-specific requirements there.
-- Treat generated version files, build outputs, caches, coverage output, and virtual environments as generated artefacts rather than source.
-
-Do not create a package for a proposed tool until its scope and implementation work have been approved. Do not create new top-level directories or reorganize established modules without a concrete need in an approved plan.
+Tests and controlled fixtures verify the documented contract; they do not override it or supply undocumented requirements.
 
 ## Working method
 

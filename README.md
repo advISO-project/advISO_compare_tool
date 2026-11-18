@@ -1,6 +1,6 @@
-# AdvISO validation toolkit
+# advISO validation toolkit
 
-This repository is a monorepo for independently installable AdvISO tools that
+This repository is a collection of independently installable advISO tools that
 support bioinformatics validation and verification work. Repository membership
 groups related software; it does not imply a shared executable, Python package,
 dependency set, version, or release lifecycle.
@@ -16,8 +16,8 @@ tests, documentation, normative artefacts, and release version. `adviso-compare`
 is the first tool. Additional tools will be added as peer packages as their
 scope and implementation are agreed.
 
-For development, start with the [contribution guide](CONTRIBUTING.md), then
+Developers should start with the [contribution guide](CONTRIBUTING.md), then
 follow the selected tool's developer guidance, linked from its README.
 Repository-wide agent and code-quality guidance is in [`AGENTS.md`](AGENTS.md).
-Each tool identifies its behavioural documentation and normative schemas in its
+Each tool identifies its behavioural documentation and any normative schemas in its
 own README.

@@ -13,7 +13,14 @@ Linux is fully supported with CPython 3.11, 3.12, 3.13, 3.14, and 3.15. Windows
 and macOS are expected to work, with full CI coverage on CPython 3.15 only.
 Use the latest available patch release. Python 3.11 is the installation minimum;
 additional Python/platform combinations need verification before joining the
-verified matrix. Activate an existing development environment, or create one with:
+verified matrix.
+
+Use an isolated Python environment with a supported Python version. The
+documented and verified setup uses Python's built-in `venv` and `pip`; other
+environment managers are acceptable. Run installation and development commands
+using that environment's Python interpreter.
+
+Activate an existing isolated environment, or create one with:
 
 ```console
 python -m venv .venv
@@ -184,6 +191,14 @@ for each clean installation. Every job installs the package normally, rather
 than relying on an editable source installation, before running the full suite.
 The scheduled run resolves dependencies afresh, just as pull-request runs do.
 
+Dependency version ranges are declared in `pyproject.toml`; there is no
+committed lockfile fixing the exact direct and indirect dependency versions.
+Fresh installations resolve compatible versions from those ranges, so
+developers and CI runs may receive different dependency versions over time.
+This exercises compatibility with evolving dependencies. The recorded versions
+identify what each CI run tested; they do not guarantee that a later
+installation selects the same versions.
+
 The workflow retains JUnit test results, built wheel/source archives, and
 version/dependency records for 30 days, including available reports on failure.
 It does not upload the temporary comparison datasets or evidence packages.
@@ -313,5 +328,6 @@ Use this sequence:
 
 The build and installation commands above also support local preparation, but
 a passing local suite does not replace the required matrix evidence. The
-release procedure records dependency resolution for the tested artefacts; it
-does not claim that users will resolve identical dependencies in the future.
+release dependency records document what was installed and tested for those
+artefacts. They do not constrain future installations to the same dependency
+versions or guarantee that users will resolve identical environments.
