@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Sequence
 from importlib.metadata import version
 from pathlib import Path
-from typing import NoReturn, Sequence
+from typing import NoReturn
 
 from adviso_compare.configuration import ConfigurationError
 from adviso_compare.inputs import InputError

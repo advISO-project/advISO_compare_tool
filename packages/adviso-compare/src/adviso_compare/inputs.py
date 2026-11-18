@@ -294,7 +294,7 @@ def _parse_table(
             )
         members = tuple(
             (name, NativeValue(NativeCategory.STRING, value))
-            for name, value in zip(header, row)
+            for name, value in zip(header, row, strict=True)
         )
         records.append(
             ParsedRecord(

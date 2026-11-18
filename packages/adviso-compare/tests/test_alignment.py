@@ -9,8 +9,8 @@ import yaml
 
 from adviso_compare.alignment import (
     RecordDisposition,
-    RecordsResult,
     RecordsPhaseStatus,
+    RecordsResult,
     align_records,
 )
 from adviso_compare.application import PreparedComparison, prepare_comparison

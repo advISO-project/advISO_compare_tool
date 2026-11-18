@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from decimal import Decimal, localcontext
 from pathlib import Path
-from typing import Callable
 
 import pytest
 import yaml
@@ -19,7 +19,6 @@ from adviso_compare.translation import (
     translate_field_value,
 )
 from tests.support.documents import JsonObject, minimal_configuration
-
 
 FieldMutation = Callable[[JsonObject], None]
 

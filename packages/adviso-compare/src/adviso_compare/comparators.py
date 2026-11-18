@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from decimal import Decimal
 from fractions import Fraction
 from types import MappingProxyType
-from typing import Callable, Mapping
 
 from adviso_compare.configuration import (
     CollectionLogicalType,
@@ -18,7 +18,6 @@ from adviso_compare.translation import (
     TranslatedValue,
     ValueDisposition,
 )
-
 
 ComparatorFunction = Callable[[FieldDefinition, TranslatedValue, TranslatedValue], bool]
 
@@ -63,7 +62,9 @@ def _native_equal(reference: NativeValue, query: NativeValue) -> bool:
         query_values = _native_array(query)
         return len(reference_values) == len(query_values) and all(
             _native_equal(reference_item, query_item)
-            for reference_item, query_item in zip(reference_values, query_values)
+            for reference_item, query_item in zip(
+                reference_values, query_values, strict=True
+            )
         )
     if reference.category is NativeCategory.OBJECT:
         reference_members = _native_object(reference)
@@ -162,6 +163,7 @@ def _collection_exact(
         for reference_element, query_element in zip(
             reference_value.value,
             query_value.value,
+            strict=True,
         )
     )
 

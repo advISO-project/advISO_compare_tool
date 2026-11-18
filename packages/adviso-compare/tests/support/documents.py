@@ -6,7 +6,6 @@ import json
 from hashlib import sha256
 from typing import Any, Literal
 
-
 JsonObject = dict[str, Any]
 
 

@@ -67,8 +67,8 @@ git diff --check
 ```
 
 Ruff is configured for Python formatting and linting in `pyproject.toml` and is
-included in the development dependencies. Existing-code cleanup and CI
-enforcement are pending. No type checker is configured. The
+included in the development dependencies. CI enforcement is pending.
+No type checker is configured. The
 [CI workflow](../../.github/workflows/adviso-compare-ci.yml) runs the existing
 test, schema, example, build, and installed-product checks.
 

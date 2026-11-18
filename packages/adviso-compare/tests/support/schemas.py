@@ -8,7 +8,6 @@ from typing import Any
 
 from jsonschema import Draft202012Validator, FormatChecker
 
-
 CONFIGURATION_SCHEMA_FILE = "comparison-configuration-v1.0.schema.json"
 RESULTS_SCHEMA_FILE = "comparison-results-v1.0.schema.json"
 SCHEMA_PACKAGE = "adviso_compare.schemas"

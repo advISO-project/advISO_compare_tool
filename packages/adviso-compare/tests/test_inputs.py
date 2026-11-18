@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from contextlib import contextmanager
 from decimal import Decimal
 from hashlib import sha256
 from pathlib import Path
-from typing import Iterator
 
 import pytest
 

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Mapping
 
 from adviso_compare.configuration import (
     AUTOMATIC_CONFIGURATION_ID,
@@ -154,6 +154,7 @@ def build_record_model(
         for canonical_name, source_name in zip(
             configuration.record_key,
             source_key_fields,
+            strict=True,
         ):
             field = configuration.field(canonical_name)
             if not record.has_field(source_name):

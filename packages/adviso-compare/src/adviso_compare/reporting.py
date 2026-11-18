@@ -11,11 +11,12 @@ import shutil
 import stat
 import sys
 import tempfile
+from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from fractions import Fraction
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 from uuid import uuid4
 
 from adviso_compare.comparators import numeric_difference_and_tolerance
@@ -26,7 +27,6 @@ from adviso_compare.results import (
     parse_evidence_json,
     validate_result,
 )
-
 
 RESULTS_FILENAME = "comparison-results.json"
 CONFIGURATION_FILENAME = "comparison-configuration.json"
@@ -759,7 +759,7 @@ def _key_text(names: list[str], values: list[str]) -> str:
     """Keep composite components and empty key strings unambiguous."""
     return "; ".join(
         f"{name} = {json.dumps(value, ensure_ascii=False)}"
-        for name, value in zip(names, values)
+        for name, value in zip(names, values, strict=True)
     )
 
 

@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import unicodedata
+from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Mapping
-
 
 _UNICODE_WHITE_SPACE_CHARACTERS = "".join(
     chr(code_point)

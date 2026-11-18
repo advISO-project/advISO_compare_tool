@@ -7,7 +7,7 @@ import json
 import os
 import stat
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import localcontext
 from hashlib import sha256
 from html.parser import HTMLParser
@@ -43,6 +43,8 @@ from tests.support.documents import (
 )
 from tests.support.schemas import configuration_validator, results_validator
 
+_DEFAULT_RUN_ID = UUID("123e4567-e89b-42d3-a456-426614174000")
+
 
 def _generated_evidence(
     tmp_path: Path,
@@ -52,7 +54,7 @@ def _generated_evidence(
     reference_value: object = 1,
     query_value: object = 2,
     configuration_document: dict[str, Any] | None = None,
-    run_id: UUID = UUID("123e4567-e89b-42d3-a456-426614174000"),
+    run_id: UUID = _DEFAULT_RUN_ID,
 ) -> ComparisonEvidence:
     """Generate canonical evidence through all three comparison phases."""
     tmp_path.mkdir(parents=True, exist_ok=True)
@@ -110,7 +112,7 @@ def _generated_evidence(
         records,
         values,
         run_id=run_id,
-        completed_at=datetime(2026, 11, 9, 12, 34, 56, tzinfo=timezone.utc),
+        completed_at=datetime(2026, 11, 9, 12, 34, 56, tzinfo=UTC),
         software_version="1.2.3",
         runtime=RuntimeIdentity(
             python="cpython-3.12.7",
@@ -963,7 +965,7 @@ def test_concurrent_runs_publish_independently_under_the_same_parent(
 
     assert len(set(selected)) == 2
     assert set(parent.iterdir()) == set(selected)
-    for child, result in zip(selected, evidence):
+    for child, result in zip(selected, evidence, strict=True):
         assert child.parent == parent
         assert sorted(path.name for path in child.iterdir()) == [
             "comparison-configuration.json",

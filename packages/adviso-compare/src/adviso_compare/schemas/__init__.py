@@ -6,7 +6,6 @@ import json
 from importlib.resources import files
 from typing import Any
 
-
 _SCHEMA_RESOURCES = (
     ("configuration", "1.0", "comparison-configuration-v1.0.schema.json"),
     ("results", "1.0", "comparison-results-v1.0.schema.json"),

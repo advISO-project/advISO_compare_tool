@@ -19,7 +19,6 @@ from tests.support.documents import minimal_configuration
 from tests.support.evidence import assert_run_package
 from tests.support.schemas import configuration_validator, results_validator
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 EXAMPLES = PROJECT_ROOT / "docs" / "examples"
 
@@ -59,6 +58,7 @@ def test_user_guide_examples_run_with_the_documented_outcome(
         for name, content in zip(
             (reference_name, query_name, configuration_name),
             (*inputs, configurations[0]),
+            strict=True,
         ):
             (working / name).write_text(content + "\n", encoding="utf-8")
     else:

@@ -5,11 +5,13 @@ from __future__ import annotations
 import copy
 import json
 import re
-from dataclasses import dataclass, field as dataclass_field
+from collections.abc import Mapping
+from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from decimal import Decimal
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Generic, Mapping, TypeVar
+from typing import Any, Generic, TypeVar
 
 import yaml
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError
@@ -23,7 +25,6 @@ from adviso_compare.processing import (
     typed_normalisation_is_compatible,
 )
 from adviso_compare.schemas import load_schema
-
 
 SUPPORTED_SCHEMA_VERSION = "1.0"
 AUTOMATIC_CONFIGURATION_ID = "adviso-compare:automatic-strict-exact"

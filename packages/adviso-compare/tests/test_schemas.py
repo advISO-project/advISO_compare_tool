@@ -19,7 +19,6 @@ from tests.support.schemas import (
     results_validator,
 )
 
-
 CONFIGURATION_SCHEMA_ID = (
     "https://adviso-project.github.io/validation_toolkit/schemas/"
     "comparison-configuration-v1.0.schema.json"

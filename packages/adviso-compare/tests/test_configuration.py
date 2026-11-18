@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 import pytest
 import yaml
@@ -16,7 +16,6 @@ from adviso_compare.configuration import (
 from adviso_compare.inputs import InputSide, ParsedDataset
 from adviso_compare.invocation import ComparisonInvocation
 from tests.support.documents import JsonObject, minimal_configuration
-
 
 ConfigurationMutation = Callable[[JsonObject], None]
 

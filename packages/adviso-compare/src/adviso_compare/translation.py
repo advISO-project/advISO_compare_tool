@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal, ROUND_DOWN, ROUND_HALF_EVEN, ROUND_HALF_UP, localcontext
+from datetime import UTC, date, datetime, timedelta, timezone
+from decimal import ROUND_DOWN, ROUND_HALF_EVEN, ROUND_HALF_UP, Decimal, localcontext
 from enum import Enum
 from typing import TypeVar
 
@@ -26,7 +26,6 @@ from adviso_compare.inputs import (
     decode_json_value,
 )
 from adviso_compare.processing import apply_source_text_operation
-
 
 _INTEGER_PATTERN = re.compile(r"^[+-]?[0-9]+$")
 _DECIMAL_PATTERN = re.compile(r"^[+-]?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$")
@@ -507,7 +506,7 @@ def _parse_datetime(value: str) -> _ExactDateTime:
         raise _InvalidValue
     offset_text = match["offset"]
     if offset_text in {"Z", "z"}:
-        offset = timezone.utc
+        offset = UTC
     else:
         if offset_text == "-00:00":
             raise _InvalidValue
@@ -535,7 +534,7 @@ def _parse_datetime(value: str) -> _ExactDateTime:
     fraction_text = match["fraction"]
     fraction = Decimal(f"0.{fraction_text}") if fraction_text else Decimal(0)
     try:
-        utc_second = local.astimezone(timezone.utc)
+        utc_second = local.astimezone(UTC)
     except (OverflowError, ValueError) as error:
         raise _InvalidValue from error
     return _ExactDateTime(utc_second, fraction)

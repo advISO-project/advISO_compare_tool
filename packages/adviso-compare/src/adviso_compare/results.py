@@ -7,11 +7,12 @@ import math
 import platform as runtime_platform
 import unicodedata
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import lru_cache
 from hashlib import sha256
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError
@@ -162,15 +163,13 @@ def assemble_result(
 ) -> ComparisonEvidence:
     """Serialize and contextually validate the linked evidence documents."""
     identifier = run_id or uuid4()
-    completion = completed_at or datetime.now(timezone.utc)
+    completion = completed_at or datetime.now(UTC)
     if identifier.version != 4:
         raise ValueError("run_id must be a UUID version 4")
     if completion.tzinfo is None or completion.utcoffset() is None:
         raise ValueError("completed_at must be timezone-aware")
     completion_text = (
-        completion.astimezone(timezone.utc)
-        .replace(microsecond=0)
-        .strftime("%Y-%m-%dT%H:%M:%SZ")
+        completion.astimezone(UTC).replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
     )
     runtime_identity = runtime or current_runtime_identity()
     configuration_document = prepared.configuration.document

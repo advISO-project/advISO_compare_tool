@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from copy import deepcopy
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 from uuid import UUID
@@ -35,9 +35,8 @@ from tests.support.documents import (
 )
 from tests.support.schemas import configuration_validator, results_validator
 
-
 RUN_ID = UUID("123e4567-e89b-42d3-a456-426614174000")
-COMPLETED_AT = datetime(2026, 11, 9, 12, 34, 56, tzinfo=timezone.utc)
+COMPLETED_AT = datetime(2026, 11, 9, 12, 34, 56, tzinfo=UTC)
 RUNTIME = RuntimeIdentity(
     python="cpython-3.12.7",
     platform="linux-x86_64",

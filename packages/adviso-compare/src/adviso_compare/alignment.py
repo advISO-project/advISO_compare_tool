@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 from types import MappingProxyType
-from typing import Mapping
 
 from adviso_compare.inputs import InputSide, SourceLocation
 from adviso_compare.records import KeyedRecord, RecordKey, RecordModel
