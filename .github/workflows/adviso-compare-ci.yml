@@ -5,7 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
-    tags: ['v*']
+    tags: ['adviso-compare-v*']
   workflow_dispatch:
 
 permissions:
