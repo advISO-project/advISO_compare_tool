@@ -58,6 +58,51 @@ def _installed_executable(environment: Path) -> Path:
     return environment / scripts / executable
 
 
+@pytest.mark.parametrize("unrelated_tag", ["v99.0.0", "another-tool-v99.0.0"])
+def test_package_version_ignores_other_release_tag_namespaces(
+    tmp_path: Path, unrelated_tag: str
+) -> None:
+    """A different tool's release cannot change this package's derived version."""
+    source_project = Path(__file__).resolve().parents[1]
+    project = tmp_path / "packages" / "adviso-compare"
+    project.mkdir(parents=True)
+    configuration = project / "pyproject.toml"
+    configuration.write_bytes((source_project / "pyproject.toml").read_bytes())
+
+    def version() -> str:
+        return subprocess.check_output(
+            [sys.executable, "-m", "setuptools_scm", "--config", str(configuration)],
+            cwd=tmp_path,
+            text=True,
+        ).strip()
+
+    def git(*arguments: str) -> None:
+        subprocess.run(
+            ["git", "-c", "commit.gpgsign=false", *arguments],
+            cwd=tmp_path,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+    git("init", "--quiet")
+    git("config", "user.name", "Synthetic version test")
+    git("config", "user.email", "version-test@example.invalid")
+    content = tmp_path / "content.txt"
+    content.write_text("first revision\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "--quiet", "-m", "Initial revision")
+    git("tag", "adviso-compare-v1.2.3")
+    assert version() == "1.2.3"
+
+    content.write_text("second revision\n", encoding="utf-8")
+    git("commit", "--quiet", "-am", "Next revision")
+    before = version()
+    assert before.startswith("1.2.4.dev1+")
+    git("tag", unrelated_tag)
+    assert version() == before
+
+
 @pytest.fixture(scope="module")
 def built_distributions(
     tmp_path_factory: pytest.TempPathFactory,

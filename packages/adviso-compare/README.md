@@ -57,5 +57,6 @@ package is `adviso_compare`.
 ## Development
 
 See the [package contribution guide](CONTRIBUTING.md) for environment setup,
-tests, builds, and the change workflow. The [implementation guide](docs/implementation-guide.md)
+tests, builds, release details, and links to the shared contribution and release
+procedure. The [implementation guide](docs/implementation-guide.md)
 explains the implementation, data flow, and validation boundaries.
