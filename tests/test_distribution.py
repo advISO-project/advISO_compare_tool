@@ -1,3 +1,7 @@
+# Copyright (C) 2026 Cardiff University, the Wellcome Sanger Institute and
+# the University of the Western Cape
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Built-distribution and installed-product checks."""
 
 from __future__ import annotations
@@ -147,6 +151,12 @@ def test_distributions_and_installed_executable_cover_the_product_path(
             member for member in wheel_members if member.endswith(".dist-info/METADATA")
         )
         metadata = BytesParser().parsebytes(distribution.read(metadata_member))
+        assert metadata["License-Expression"] == "GPL-3.0-or-later"
+        assert metadata.get_all("License-File") == ["LICENSE"]
+        licence_member = metadata_member.rsplit("/", 1)[0] + "/licenses/LICENSE"
+        assert (
+            distribution.read(licence_member) == (project_root / "LICENSE").read_bytes()
+        )
         record_member = next(
             member for member in wheel_members if member.endswith(".dist-info/RECORD")
         )
@@ -162,6 +172,7 @@ def test_distributions_and_installed_executable_cover_the_product_path(
     )
     assert {f"src/{member}" for member in REQUIRED_PACKAGE_MEMBERS} <= sdist_members
     assert {
+        "LICENSE",
         "docs/implementation-guide.md",
         "docs/user-guide.md",
         "docs/examples/automatic/query.csv",
@@ -175,6 +186,12 @@ def test_distributions_and_installed_executable_cover_the_product_path(
         "tests/support/evidence.py",
         "tests/support/schemas.py",
     } <= sdist_members
+    with tarfile.open(source_distribution, mode="r:gz") as distribution:
+        root = source_distribution.name.removesuffix(".tar.gz")
+        licence_file = distribution.extractfile(f"{root}/LICENSE")
+        assert licence_file is not None
+        with licence_file:
+            assert licence_file.read() == (project_root / "LICENSE").read_bytes()
 
     environment = tmp_path / "installed"
     venv.EnvBuilder(with_pip=True).create(environment)

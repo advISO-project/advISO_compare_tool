@@ -56,7 +56,8 @@ This editable installation makes source changes available to the installed
 `adviso-compare` command. Git-derived versions use `setuptools-scm`;
 `src/adviso_compare/_version.py` is generated, not maintained by hand. Build and
 development environments require `setuptools-scm` 10.3.4 or later for the
-configured tag prefix.
+configured tag prefix. Setuptools 77 or later is required for the SPDX licence
+expression and licence-file metadata in `pyproject.toml`.
 
 ## Working on a change
 
@@ -252,7 +253,9 @@ python -m build
 
 The archives are written to the generated `dist/` directory. `MANIFEST.in`
 explicitly includes documentation and test sources, including test support
-modules, in source archives. The distribution test builds both
+modules, in source archives. The project licence expression and `LICENSE` file
+are declared in `pyproject.toml`; both distributions include the licence text.
+The distribution test verifies these notices and builds both
 archives once, then installs each into a separate fresh virtual environment.
 It resolves declared dependencies without borrowing development site-packages;
 source-archive installation also uses isolated build dependencies. These tests

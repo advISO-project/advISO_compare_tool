@@ -60,3 +60,12 @@ See the [contribution guide](CONTRIBUTING.md) for environment setup,
 tests, builds, CI, and release preparation. These policies apply to human
 contributors and agents; [AGENTS.md](AGENTS.md) adds agent-specific instructions.
 The [implementation guide](docs/implementation-guide.md) explains the implementation, data flow, and validation boundaries.
+
+## Licence
+
+Copyright (C) 2026 Cardiff University, the Wellcome Sanger Institute and the University of the Western Cape.
+
+The original software, schemas, documentation, and examples in this repository
+are licensed under the GNU General Public License, version 3 or (at your option)
+any later version (`GPL-3.0-or-later`). See [LICENSE](LICENSE) for the full terms,
+including the warranty disclaimer.
