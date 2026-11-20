@@ -325,10 +325,10 @@ metadata are knowingly inconsistent with the implementation.
 ## Continuous integration
 
 The workflow runs on pull requests targeting `main` (including updates to those
-pull requests), pushes to `main`, pushes of tags matching `adviso-compare-v*`,
+pull requests), pushes to `main`, pushes of tags matching `v*`,
 and manual requests.
 Pushes to development branches without an open pull request do not trigger it.
-For `adviso-compare-v*` tag pushes only, a final job prepares a draft release
+For `v*` tag pushes only, a final job prepares a draft release
 after the aggregate CI gate succeeds. Publication remains manual.
 
 A separate `adviso-compare / Ruff` job runs formatting and lint checks once on
@@ -395,7 +395,11 @@ path. The normal test command above lets pytest manage its own temporary path.
 The aggregate check **`adviso-compare CI passed`** succeeds only when all seven
 runtime jobs and the Ruff/release-automation job succeed. It fails if a required
 job fails, is cancelled, or is skipped. The tag-only draft-preparation job follows
-this gate.
+this gate. GitHub supplies the runtime matrix, quality job, and gate results
+directly to release preparation through the workflow's `needs` context. These
+aggregate results are retained as `ci-results.json` in the evidence ZIP; the
+script does not query job display names or reconstruct earlier run attempts.
+On a retry, successful dependencies and their artefacts can be reused.
 
 The `main` branch is protected by a GitHub ruleset requiring a pull request, this
 status check, and an up-to-date branch before merging. Another person's approval
@@ -410,9 +414,9 @@ CI gate succeeds; it does not run on pull requests, branch pushes, or manual run
 
 ## Versioning and compatibility
 
-Release tags use `adviso-compare-v<version>`, for example `adviso-compare-v1.0.0`.
-Git-derived version calculation and the CI tag trigger select that prefix.
-A clean checkout tagged `adviso-compare-v1.0.0` builds as version `1.0.0`.
+Release tags use `v<version>`, for example `v1.0.0`. Git-derived version
+calculation and the CI tag trigger select that prefix. A clean checkout tagged
+`v1.0.0` builds as version `1.0.0`.
 Do not rename or move published tags.
 
 The software, comparison-configuration schema, and results schema have independent
@@ -433,8 +437,7 @@ after the required checks succeed, prepares a **draft GitHub Release** with the
 tested distributions and verification evidence. Review and complete the release
 notes before choosing **Publish release**. CI never publishes the draft.
 
-The four steps below use version `1.0.0` and tag `adviso-compare-v1.0.0` as
-examples; substitute the intended version consistently.
+The four steps below use version `1.0.0` and tag `v1.0.0` as examples; substitute the intended version consistently.
 
 These steps assume no existing checkout or Python environment. You need Git on
 your computer, a GitHub account with repository write access, and ordinary Git
@@ -450,7 +453,7 @@ is needed to prepare a release; GitHub runs the verification and preparation.
    is only needed if further repository changes are required.
 
    Choose an unused semantic version and its tag, for example
-   `adviso-compare-v1.0.0`. Check **Tags** and **Releases** for existing names.
+   `v1.0.0`. Check **Tags** and **Releases** for existing names.
    Do not move or reuse a tag for different source. You can start writing release
    notes in a local editor now, or write them in the generated draft in step 3.
    Notes describe the changes, known limitations, supported runtimes, and schema
@@ -479,8 +482,8 @@ is needed to prepare a release; GitHub runs the verification and preparation.
 
    ```console
    git fetch origin main --tags
-   git tag -a adviso-compare-v1.0.0 -m "adviso-compare 1.0.0" origin/main
-   git push origin adviso-compare-v1.0.0
+   git tag -a v1.0.0 -m "adviso-compare 1.0.0" origin/main
+   git push origin v1.0.0
    ```
 
    This tags the fetched `main` commit without switching branches or changing
@@ -502,7 +505,7 @@ is needed to prepare a release; GitHub runs the verification and preparation.
    - `release-verification.md`, identifying the tag, commit, CI run/attempt,
      environments, schema versions, checks, and distribution hashes;
    - `verification-evidence.zip`, containing all matrix and quality-check
-     reports, environment/dependency records, and job outcomes; and
+     reports, environment/dependency records, and workflow dependency results; and
    - `SHA256SUMS.txt`, with complete SHA-256 hashes for the other four assets.
 
    These are **release assets**, distinct from GitHub's automatically generated
@@ -542,8 +545,9 @@ release gates and another person's approval is not a merge requirement.
 ### Release preparation implementation
 
 The development-only [script](.github/scripts/adviso_compare_release.py) validates
-the tag, merged source, successful jobs, commit identifiers, JUnit reports,
-distribution versions, and required evidence before assembling the five assets.
+the tag, merged source, workflow dependency results, commit identifiers, JUnit
+reports, distribution versions, and required evidence before assembling the five
+assets.
 Its [tests](.github/scripts/test_adviso_compare_release.py) use synthetic artefacts
 and mocked GitHub commands; they do not create releases. It uses the GitHub-hosted
 runner's GitHub CLI and workflow token; no additional secret is required.

@@ -58,7 +58,7 @@ def _installed_executable(environment: Path) -> Path:
     return environment / scripts / executable
 
 
-@pytest.mark.parametrize("unrelated_tag", ["v99.0.0", "another-tool-v99.0.0"])
+@pytest.mark.parametrize("unrelated_tag", ["99.0.0", "another-tool-v99.0.0"])
 def test_version_ignores_tags_without_the_release_prefix(
     tmp_path: Path, unrelated_tag: str
 ) -> None:
@@ -90,7 +90,7 @@ def test_version_ignores_tags_without_the_release_prefix(
     content.write_text("first revision\n", encoding="utf-8")
     git("add", ".")
     git("commit", "--quiet", "-m", "Initial revision")
-    git("tag", "adviso-compare-v1.2.3")
+    git("tag", "v1.2.3")
     assert version() == "1.2.3"
 
     content.write_text("second revision\n", encoding="utf-8")

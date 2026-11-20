@@ -5,7 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
-    tags: ['adviso-compare-v*']
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -166,8 +166,8 @@ jobs:
 
   release:
     name: adviso-compare / Prepare draft release
-    needs: ci
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/adviso-compare-v')
+    needs: [test, quality, ci]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -197,6 +197,7 @@ jobs:
       - name: Assemble verified files and create or refresh the draft
         env:
           GH_TOKEN: ${{ github.token }}
+          CI_RESULTS: ${{ toJSON(needs) }}
         run: >-
           python .github/scripts/adviso_compare_release.py
           --inputs ci-output/release-input

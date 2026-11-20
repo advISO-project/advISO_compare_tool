@@ -18,14 +18,14 @@ def candidate(tmp_path):
     """Build small synthetic CI artefacts with the real workflow's matrix."""
     workflow = yaml.safe_load(release.WORKFLOW.read_text())
     context = release.ReleaseContext(
-        tag="adviso-compare-v1.0.0",
+        tag="v1.0.0",
         commit="a" * 40,
         repository="example/toolkit",
         run_id="123",
         attempt="1",
     )
     inputs = tmp_path / "inputs"
-    jobs = []
+    ci_results = {"test": "success", "quality": "success", "ci": "success"}
     for entry in workflow["jobs"]["test"]["strategy"]["matrix"]["include"]:
         directory = inputs / f"adviso-compare-{entry['os']}-python-{entry['python']}"
         records = directory / "tmp" / "distributions"
@@ -58,16 +58,6 @@ def candidate(tmp_path):
             member = tarfile.TarInfo("adviso_compare-1.0.0/PKG-INFO")
             member.size = len(metadata)
             source.addfile(member, io.BytesIO(metadata))
-        jobs.append(
-            {
-                "name": f"adviso-compare / {entry['os']} / Python {entry['python']}",
-                "status": "completed",
-                "conclusion": "success",
-                "head_sha": context.commit,
-                "run_id": 123,
-                "run_attempt": 1,
-            }
-        )
     quality = inputs / "adviso-compare-quality"
     quality.mkdir()
     for name in release.QUALITY_RECORDS:
@@ -77,23 +67,12 @@ def candidate(tmp_path):
     (quality / "release-tests.xml").write_text(
         '<testsuite tests="1" failures="0" errors="0" />'
     )
-    for job in ("quality", "ci"):
-        jobs.append(
-            {
-                "name": workflow["jobs"][job]["name"],
-                "status": "completed",
-                "conclusion": "success",
-                "head_sha": context.commit,
-                "run_id": 123,
-                "run_attempt": 1,
-            }
-        )
-    return inputs, tmp_path / "output", workflow, context, jobs
+    return inputs, tmp_path / "output", workflow, context, ci_results
 
 
 def test_candidate_keeps_tested_bytes_and_collects_complete_evidence(candidate):
-    inputs, output, workflow, context, jobs = candidate
-    files = release.build_candidate(inputs, output, workflow, context, jobs)
+    inputs, output, workflow, context, ci_results = candidate
+    files = release.build_candidate(inputs, output, workflow, context, ci_results)
     assert len(files) == 5
     selected = inputs / release.DISTRIBUTION_ARTIFACT / "tmp" / "distributions"
     for name in (
@@ -110,6 +89,7 @@ def test_candidate_keeps_tested_bytes_and_collects_complete_evidence(candidate):
             == 7
         )
         assert "adviso-compare-quality/ruff-version.txt" in evidence.namelist()
+        assert json.loads(evidence.read("ci-results.json")) == ci_results
     record = (output / "release-verification.md").read_text()
     assert context.commit in record and "/actions/runs/123" in record
     assert "Independent human review is not asserted" in record
@@ -122,12 +102,11 @@ def test_candidate_keeps_tested_bytes_and_collects_complete_evidence(candidate):
         "wrong-commit",
         "failed-report",
         "wrong-version",
-        "failed-job",
         "wrong-tag",
     ],
 )
 def test_inconsistent_candidate_evidence_is_rejected(candidate, problem):
-    inputs, output, workflow, context, jobs = candidate
+    inputs, output, workflow, context, ci_results = candidate
     selected = inputs / release.DISTRIBUTION_ARTIFACT
     if problem == "missing-record":
         (selected / "python.txt").unlink()
@@ -144,14 +123,12 @@ def test_inconsistent_candidate_evidence_is_rejected(candidate, problem):
                 "adviso_compare-2.0.0.dist-info/METADATA",
                 "Name: adviso-compare\nVersion: 2.0.0\n",
             )
-    elif problem == "failed-job":
-        jobs[0]["conclusion"] = "failure"
     else:
         context = release.ReleaseContext(
-            "another-tool-v1.0.0", context.commit, context.repository, "123", "1"
+            "release-1.0.0", context.commit, context.repository, "123", "1"
         )
     with pytest.raises(ValueError):
-        release.build_candidate(inputs, output, workflow, context, jobs)
+        release.build_candidate(inputs, output, workflow, context, ci_results)
     assert not output.exists()
 
 
@@ -215,32 +192,25 @@ def test_unmerged_or_different_source_cannot_prepare_a_release(
         release.verify_source(context)
 
 
-@pytest.mark.parametrize("latest_conclusion", ["success", "failure"])
-def test_retry_uses_latest_job_outcome_and_retains_other_successes(
-    candidate, latest_conclusion
-):
-    inputs, output, workflow, context, jobs = candidate
-    context = release.ReleaseContext(
-        context.tag, context.commit, context.repository, "123", "2"
-    )
-    jobs.append({**jobs[0], "run_attempt": 2, "conclusion": latest_conclusion})
-    jobs[0]["conclusion"] = "failure" if latest_conclusion == "success" else "success"
-    if latest_conclusion == "success":
-        release.build_candidate(inputs, output, workflow, context, jobs)
-        with zipfile.ZipFile(output / "verification-evidence.zip") as archive:
-            outcomes = json.loads(archive.read("jobs.json"))
-        assert outcomes[0]["run_attempt"] == 2
-        assert outcomes[1]["run_attempt"] == 1
+@pytest.mark.parametrize(
+    ("job", "result"),
+    [("test", "failure"), ("quality", "cancelled"), ("ci", "skipped"), ("test", None)],
+)
+def test_candidate_requires_successful_workflow_dependencies(candidate, job, result):
+    inputs, output, workflow, context, ci_results = candidate
+    if result is None:
+        ci_results.pop(job)
     else:
-        with pytest.raises(ValueError, match="not succeeded"):
-            release.build_candidate(inputs, output, workflow, context, jobs)
-        assert not output.exists()
+        ci_results[job] = result
+    with pytest.raises(ValueError, match="CI dependencies"):
+        release.build_candidate(inputs, output, workflow, context, ci_results)
+    assert not output.exists()
 
 
 def test_tag_run_downloads_its_own_evidence_and_prepares_only_a_draft(
     candidate, monkeypatch
 ):
-    inputs, output, _, context, jobs = candidate
+    inputs, output, _, context, ci_results = candidate
     calls = []
     for key, value in {
         "GITHUB_EVENT_NAME": "push",
@@ -249,6 +219,12 @@ def test_tag_run_downloads_its_own_evidence_and_prepares_only_a_draft(
         "GITHUB_REPOSITORY": context.repository,
         "GITHUB_RUN_ID": context.run_id,
         "GITHUB_RUN_ATTEMPT": "2",
+        "CI_RESULTS": json.dumps(
+            {
+                job: {"result": result, "outputs": {}}
+                for job, result in ci_results.items()
+            }
+        ),
     }.items():
         monkeypatch.setenv(key, value)
     monkeypatch.setattr(
@@ -260,10 +236,6 @@ def test_tag_run_downloads_its_own_evidence_and_prepares_only_a_draft(
     def api(*arguments):
         calls.append(arguments)
         endpoint = arguments[-1]
-        if "/attempts/1/jobs" in endpoint:
-            return [{"jobs": jobs}]
-        if "/attempts/2/jobs" in endpoint:
-            return [{"jobs": []}]
         assert endpoint == f"repos/{context.repository}/releases"
         return [[]]
 

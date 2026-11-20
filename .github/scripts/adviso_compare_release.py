@@ -21,7 +21,7 @@ from packaging.version import Version
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / ".github/workflows/adviso-compare-ci.yml"
-TAG_PREFIX = "adviso-compare-v"
+TAG_PREFIX = "v"
 DISTRIBUTION_ARTIFACT = "adviso-compare-ubuntu-24.04-python-3.11"
 QUALITY_RECORDS = (
     "commit.txt",
@@ -56,9 +56,9 @@ class ReleaseContext:
 
     @property
     def version(self) -> Version:
-        """Reject other packages' tags and unpublishable development versions."""
+        """Require a v-prefixed release tag without development or local versions."""
         if not self.tag.startswith(TAG_PREFIX):
-            raise ValueError("Release tag does not belong to adviso-compare")
+            raise ValueError("Release tag must start with v")
         version = Version(self.tag.removeprefix(TAG_PREFIX))
         if version.dev is not None or version.local is not None:
             raise ValueError("Release tag must not have a development or local version")
@@ -123,44 +123,14 @@ def build_candidate(
     output: Path,
     workflow: dict[str, Any],
     context: ReleaseContext,
-    jobs: list[dict[str, Any]],
+    ci_results: dict[str, str],
 ) -> list[Path]:
     """Validate all CI evidence before assembling the five publication assets."""
     version = context.version
     matrix = workflow["jobs"]["test"]["strategy"]["matrix"]["include"]
     names = [f"adviso-compare-{e['os']}-python-{e['python']}" for e in matrix]
-    expected_jobs = [
-        f"adviso-compare / {e['os']} / Python {e['python']}" for e in matrix
-    ]
-    expected_jobs += [workflow["jobs"][name]["name"] for name in ("quality", "ci")]
-    checked_jobs = []
-    for name in expected_jobs:
-        matches = [job for job in jobs if job["name"] == name]
-        latest = max((job["run_attempt"] for job in matches), default=0)
-        matches = [job for job in matches if job["run_attempt"] == latest]
-        if len(matches) != 1:
-            raise ValueError(f"Missing or ambiguous CI job: {name}")
-        job = matches[0]
-        if (
-            job["status"] != "completed"
-            or job["conclusion"] != "success"
-            or job["head_sha"] != context.commit
-            or str(job["run_id"]) != context.run_id
-        ):
-            raise ValueError(f"CI job has not succeeded for this source/run: {name}")
-        checked_jobs.append(
-            {
-                key: job[key]
-                for key in (
-                    "name",
-                    "status",
-                    "conclusion",
-                    "head_sha",
-                    "run_id",
-                    "run_attempt",
-                )
-            }
-        )
+    if any(ci_results.get(job) != "success" for job in ("test", "quality", "ci")):
+        raise ValueError("Required CI dependencies have not all succeeded")
 
     records: dict[str, bytes] = {}
     selected = []
@@ -233,7 +203,7 @@ def build_candidate(
     output.mkdir(parents=True)
     files = [Path(shutil.copyfile(path, output / path.name)) for path in selected]
     evidence = output / "verification-evidence.zip"
-    records["jobs.json"] = (json.dumps(checked_jobs, indent=2) + "\n").encode()
+    records["ci-results.json"] = (json.dumps(ci_results, indent=2) + "\n").encode()
     with zipfile.ZipFile(evidence, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for name, data in sorted(records.items()):
             member = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
@@ -256,8 +226,9 @@ def build_candidate(
         "determinism, and clean wheel/source installations. The published archives "
         "are copied from those tested bytes, without rebuilding.\n\n"
         f"Packaged schema versions: {json.dumps(schemas, sort_keys=True)}.\n\n"
-        "Exact environments, dependencies, JUnit results, Ruff output and job "
-        "outcomes are in `verification-evidence.zip`. Dependency records describe "
+        "Exact environments, dependencies, JUnit results, Ruff output and workflow "
+        "dependency results are in `verification-evidence.zip`. Dependency records "
+        "describe "
         "what was tested, not future dependency resolution.\n\n"
         "## SHA-256\n\n"
         + "\n".join(
@@ -377,24 +348,16 @@ def main() -> None:
         "--dir",
         str(args.inputs / "adviso-compare-quality"),
     )
-    # A partial rerun can reuse successful jobs and artefacts from older attempts.
-    jobs = []
-    for attempt in range(1, int(context.attempt) + 1):
-        pages = gh_json(
-            "api",
-            "--paginate",
-            "--slurp",
-            f"repos/{context.repository}/actions/runs/{context.run_id}/attempts/{attempt}/jobs?per_page=100",
-        )
-        jobs.extend(
-            {**job, "run_attempt": attempt} for page in pages for job in page["jobs"]
-        )
+    ci_results = {
+        job: details["result"]
+        for job, details in json.loads(os.environ["CI_RESULTS"]).items()
+    }
     files = build_candidate(
         args.inputs,
         args.output,
         workflow,
         context,
-        jobs,
+        ci_results,
     )
     attach_to_draft(files, args.output, context)
 
