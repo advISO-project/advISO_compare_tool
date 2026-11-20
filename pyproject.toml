@@ -17,7 +17,7 @@ description = "Translate, compare, and report differences between structured bio
 readme = "README.md"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 authors = [
     { name = "Kevin Howe" },
     { name = "Bruhad Dave" },
@@ -89,7 +89,7 @@ fallback_version = "0.0.0"
 prefix = "v"
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py310"
 line-length = 88
 include = ["*.py", "*.pyi"]
 src = ["src", "tests"]

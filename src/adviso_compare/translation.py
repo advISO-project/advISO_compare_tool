@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import ROUND_DOWN, ROUND_HALF_EVEN, ROUND_HALF_UP, Decimal, localcontext
 from enum import Enum
 from typing import TypeVar
@@ -510,7 +510,7 @@ def _parse_datetime(value: str) -> _ExactDateTime:
         raise _InvalidValue
     offset_text = match["offset"]
     if offset_text in {"Z", "z"}:
-        offset = UTC
+        offset = timezone.utc
     else:
         if offset_text == "-00:00":
             raise _InvalidValue
@@ -538,7 +538,7 @@ def _parse_datetime(value: str) -> _ExactDateTime:
     fraction_text = match["fraction"]
     fraction = Decimal(f"0.{fraction_text}") if fraction_text else Decimal(0)
     try:
-        utc_second = local.astimezone(UTC)
+        utc_second = local.astimezone(timezone.utc)
     except (OverflowError, ValueError) as error:
         raise _InvalidValue from error
     return _ExactDateTime(utc_second, fraction)

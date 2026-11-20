@@ -164,7 +164,7 @@ def test_distributions_and_installed_executable_cover_the_product_path(
     sdist_members = _relative_sdist_members(source_distribution)
 
     assert metadata["Name"] == "adviso-compare"
-    assert metadata["Requires-Python"] == ">=3.11"
+    assert metadata["Requires-Python"] == ">=3.10"
     assert REQUIRED_PACKAGE_MEMBERS <= wheel_members
     assert all(
         any(member.endswith(path) for member in wheel_members)
@@ -194,7 +194,8 @@ def test_distributions_and_installed_executable_cover_the_product_path(
             assert licence_file.read() == (project_root / "LICENSE").read_bytes()
 
     environment = tmp_path / "installed"
-    venv.EnvBuilder(with_pip=True).create(environment)
+    # Symlinks preserve the base interpreter's location on POSIX.
+    venv.EnvBuilder(with_pip=True, symlinks=os.name != "nt").create(environment)
     installed_python = _installed_python(environment)
     subprocess.run(
         [

@@ -87,11 +87,11 @@ def test_candidate_keeps_tested_bytes_and_collects_complete_evidence(candidate):
     for line in (output / "SHA256SUMS.txt").read_text().splitlines():
         digest, name = line.split("  ", 1)
         assert digest == hashlib.sha256((output / name).read_bytes()).hexdigest()
+    matrix = workflow["jobs"]["test"]["strategy"]["matrix"]["include"]
     with zipfile.ZipFile(output / "verification-evidence.zip") as evidence:
-        assert (
-            len([name for name in evidence.namelist() if name.endswith("/tests.xml")])
-            == 7
-        )
+        assert len(
+            [name for name in evidence.namelist() if name.endswith("/tests.xml")]
+        ) == len(matrix)
         assert "adviso-compare-quality/ruff-version.txt" in evidence.namelist()
         assert json.loads(evidence.read("ci-results.json")) == ci_results
     record = (output / "release-verification.md").read_text()

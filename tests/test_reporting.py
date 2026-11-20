@@ -11,7 +11,7 @@ import json
 import os
 import stat
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from decimal import localcontext
 from hashlib import sha256
 from html.parser import HTMLParser
@@ -116,7 +116,7 @@ def _generated_evidence(
         records,
         values,
         run_id=run_id,
-        completed_at=datetime(2026, 11, 9, 12, 34, 56, tzinfo=UTC),
+        completed_at=datetime(2026, 11, 9, 12, 34, 56, tzinfo=timezone.utc),
         software_version="1.2.3",
         runtime=RuntimeIdentity(
             python="cpython-3.12.7",

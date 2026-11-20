@@ -27,8 +27,8 @@ choose an interpretation, weaken a requirement, or invent behaviour.
 
 ## Development environments
 
-Linux is fully supported with CPython 3.11–3.15. Windows and macOS are expected
-to work, with full CI coverage on CPython 3.15 only. Python 3.11 is the installation
+Linux is fully supported with CPython 3.10–3.15. Windows and macOS are expected
+to work, with full CI coverage on CPython 3.10 only. Python 3.10 is the installation
 minimum; use the latest available patch release. Additional combinations need
 verification before joining the verified matrix.
 
@@ -137,7 +137,7 @@ edit. Project-wide tooling choices require deliberate configuration and approval
 Ruff is configured in [pyproject.toml](pyproject.toml) and pinned in the
 development dependencies. It checks application code, tests, and `.github/scripts/`,
 excluding generated version files, virtual environments, and build outputs.
-The formatting target is 88 characters and the syntax target is Python 3.11.
+The formatting target is 88 characters and the syntax target is Python 3.10.
 
 ```console
 python -m ruff format --check .
@@ -337,22 +337,22 @@ after the aggregate CI gate succeeds. Publication remains manual.
 A separate `adviso-compare / Ruff` job runs formatting and lint checks once on
 `ubuntu-24.04` with CPython 3.11. It installs the development dependencies from
 the project, including the pinned Ruff version, and checks without modifying
-files. It includes `.github/scripts/` and runs the release-preparation tests once. It runs alongside the seven runtime
+files. It includes `.github/scripts/` and runs the release-preparation tests once. It runs alongside the eight runtime
 test configurations below; Ruff is not rerun in each matrix job.
 
 Each run executes the full suite, including schema/example checks, builds,
-and clean wheel/source-archive installation scenarios, on all seven combinations
+and clean wheel/source-archive installation scenarios, on all eight combinations
 in the verification matrix using these standard GitHub-hosted runners:
 
 | Runner | Architecture | CPython versions |
 | --- | --- | --- |
-| `ubuntu-24.04` | x86-64 | 3.11, 3.12, 3.13, 3.14, 3.15 |
-| `macos-15` | ARM64 | 3.15 |
-| `windows-2025` | x86-64 | 3.15 |
+| `ubuntu-24.04` | x86-64 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 |
+| `macos-15` | ARM64 | 3.10 |
+| `windows-2025` | x86-64 | 3.10 |
 
 The same full suite and matrix apply to pull requests, `main`, version-tag pushes,
 and manual runs. Linux is the fully supported deployment platform. Windows and
-macOS compatibility is checked on Python 3.15; other Python versions on those
+macOS compatibility is checked on Python 3.10; other Python versions on those
 platforms are outside the verified matrix. No reduced test selection is used
 for any matrix job. Review this coverage when preparing a release or updating
 the support policy.
@@ -395,7 +395,7 @@ path. The normal test command above lets pytest manage its own temporary path.
 
 ### Merge settings
 
-The aggregate check **`adviso-compare CI passed`** succeeds only when all seven
+The aggregate check **`adviso-compare CI passed`** succeeds only when all eight
 runtime jobs and the Ruff/release-automation job succeed. It fails if a required
 job fails, is cancelled, or is skipped. The tag-only draft-preparation job follows
 this gate. GitHub supplies the runtime matrix, quality job, and gate results
