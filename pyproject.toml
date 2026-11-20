@@ -1,48 +1,110 @@
+# Copyright (C) 2026 Cardiff University, the Wellcome Sanger Institute and
+# the University of the Western Cape
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 [build-system]
-requires = ["setuptools >= 61.0",
-            "setuptools_scm[toml] >= 4, <6",
-            "setuptools_scm_git_archive",
-            "wheel >= 0.29.0"
-            ]
+requires = [
+    "setuptools>=77",
+    "setuptools-scm>=10.3.4",
+    "wheel",
+]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools_scm]
-# setuptools_scm obtains the package version number from Git tags so we don't
-# have to have a version number hardcoded in scripts in the package 
-# upon installation, the version is written (from git tag) to this file
-write_to = "validation_toolkit/version.py"
-git_describe_command = "git describe --dirty --tags --long --match v* --first-parent"
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["validation_toolkit"]
-exclude = []
-namespaces = false
-
 [project]
-name = "validation_toolkit"
-authors = [
-    {name = "Bruhad Dave", email = "bd8@sanger.ac.uk"},
-]
-description = "Compare (verify/validate) analysis outputs against ISO-in-a-Box standard references."
+name = "adviso-compare"
+dynamic = ["version"]
+description = "Translate, compare, and report differences between structured bioinformatics datasets."
 readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
-keywords = [""]
+authors = [
+    { name = "Kevin Howe" },
+    { name = "Bruhad Dave" },
+    { name = "Frank Schwach" },
+]
+keywords = [
+    "bioinformatics",
+    "data validation",
+    "ISO 15189",
+]
 classifiers = [
-    "Programming Language :: Python :: 3.11",
-    "Operating System :: OS Independent"
-
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    ##TODO: Add as needed
-	"flake8>=7.0.0",
-	"pytest>=6.2.2",
-    "pyyaml",
-    "importlib-resources>=5.1.0"
+    "jsonschema[format-nongpl]>=4.23,<5",
+    "PyYAML>=6.0,<7",
 ]
 
-dynamic = ["version"]
+[project.urls]
+Repository = "https://github.com/advISO-project/advISO_compare_tool"
+Issues = "https://github.com/advISO-project/advISO_compare_tool/issues"
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.2,<2",
+    "pytest>=8,<9",
+    "ruff==0.17.5",
+    "setuptools>=77",
+    "setuptools-scm>=10.3.4",
+    "wheel",
+]
 
 [project.scripts]
-# create an executable for the CLI
-validation_toolkit = "validation_toolkit.cli:main"
+adviso-compare = "adviso_compare.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["adviso_compare*"]
+namespaces = false
+
+[tool.setuptools.package-data]
+"adviso_compare.schemas" = ["*.json"]
+
+[tool.setuptools.data-files]
+"share/doc/adviso-compare" = ["docs/user-guide.md"]
+"share/doc/adviso-compare/examples/automatic" = [
+    "docs/examples/automatic/query.csv",
+    "docs/examples/automatic/reference.csv",
+]
+"share/doc/adviso-compare/examples/custom" = [
+    "docs/examples/custom/configuration.yaml",
+    "docs/examples/custom/query.csv",
+    "docs/examples/custom/reference.json",
+]
+
+[tool.setuptools_scm]
+version_file = "src/adviso_compare/_version.py"
+fallback_version = "0.0.0"
+
+[tool.setuptools_scm.tag]
+prefix = "v"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+include = ["*.py", "*.pyi"]
+src = ["src", "tests"]
+extend-exclude = ["src/adviso_compare/_version.py", "build", "dist"]
+force-exclude = true
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "B", "UP"]
+# Retain existing enum string conversion; StrEnum would change that behaviour.
+ignore = ["UP042"]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--strict-config",
+    "--strict-markers",
+]
+testpaths = ["tests"]
+tmp_path_retention_policy = "failed"
