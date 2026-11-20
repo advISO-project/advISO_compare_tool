@@ -18,6 +18,7 @@ scope and implementation are agreed.
 
 Developers should start with the [contribution guide](CONTRIBUTING.md), then
 follow the selected tool's developer guidance, linked from its README.
-Repository-wide agent and code-quality guidance is in [`AGENTS.md`](AGENTS.md).
+Shared development and code-quality guidance is in the contribution guide;
+agent-specific instructions are in [`AGENTS.md`](AGENTS.md).
 Each tool identifies its behavioural documentation and any normative schemas in its
 own README.

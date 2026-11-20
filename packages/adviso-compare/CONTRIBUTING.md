@@ -1,7 +1,7 @@
 # Contributing to `adviso-compare`
 
-Read the repository [contribution guide](../../CONTRIBUTING.md) and applicable
-[agent guidance](../../AGENTS.md). The
+Read the repository [contribution guide](../../CONTRIBUTING.md), which applies to
+human contributors and agents alike. The
 [implementation guide](docs/implementation-guide.md) explains the implementation and
 points to the code and tests for each responsibility. The commands below run
 from the repository root and apply to this package. Other tools have their own
@@ -154,13 +154,16 @@ The workflow runs on pull requests targeting `main` (including updates to those
 pull requests), pushes to `main`, pushes of tags matching `adviso-compare-v*`,
 and manual requests.
 Pushes to development branches without an open pull request do not trigger it.
-It does not publish releases.
+For `adviso-compare-v*` tag pushes only, a final job prepares a draft release
+after the aggregate CI gate succeeds. Publication remains manual. Tags belonging
+to other tools do not trigger this workflow.
 
 A separate `adviso-compare / Ruff` job runs formatting and lint checks once on
 `ubuntu-24.04` with CPython 3.11. It installs the development dependencies from
 the package, including the pinned Ruff version, and checks without modifying
-files. It runs alongside the seven runtime test configurations below; Ruff is
-not rerun in each matrix job.
+files. It also checks `.github/scripts/` using this package's Ruff configuration
+and runs the release-preparation tests once. It runs alongside the seven runtime
+test configurations below; Ruff is not rerun in each matrix job.
 
 Each run executes the full suite, including schema/example checks, builds,
 and clean wheel/source-archive installation scenarios, on all seven combinations
@@ -197,9 +200,11 @@ installation selects the same versions.
 The workflow retains JUnit test results, built wheel/source archives, and
 version/dependency records for 30 days, including available reports on failure.
 It does not upload the temporary comparison datasets or evidence packages.
-Development CI artefacts are temporary verification records; release evidence
-needs separate retention. Superseded pull-request runs are cancelled. Other
-matrix jobs continue after a failure to show the full set of outcomes.
+A separate `adviso-compare-quality` artefact retains Ruff output, release-automation
+test results, and its environment records for the same period. Successful tag
+runs attach the verification records to the draft release for longer retention.
+Superseded pull-request runs are cancelled. Other matrix jobs continue after a
+failure to show the full set of outcomes.
 
 To reproduce the test command locally, use a supported Python environment with
 the development dependencies installed:
@@ -216,7 +221,8 @@ path. The normal test command above lets pytest manage its own temporary path.
 ### Required status check
 
 The aggregate check is **`adviso-compare CI passed`**. It succeeds only when all
-seven runtime jobs and the Ruff job succeed. It is required by the `main`
+seven runtime jobs and the Ruff/release-automation job succeed. The tag-only
+draft-preparation job follows this gate; it does not change the required check. It is required by the `main`
 ruleset; see the shared [merge settings](../../CONTRIBUTING.md#continuous-integration-and-merge-settings).
 
 ## Making a change
@@ -243,9 +249,9 @@ version change is approved.
 
 ## Release details
 
-Follow the shared [six-step release procedure](../../CONTRIBUTING.md#preparing-a-release),
+Follow the shared [release procedure](../../CONTRIBUTING.md#preparing-a-release),
 using these values. The software version is independent of both JSON format
-versions. The workflow builds and tests distributions; publication is manual.
+versions. CI prepares the draft and its assets; publication is manual.
 
 | Detail | Value |
 | --- | --- |
@@ -256,21 +262,35 @@ versions. The workflow builds and tests distributions; publication is manual.
 | Workflow | `.github/workflows/adviso-compare-ci.yml`, displayed as **adviso-compare CI** |
 | Required aggregate check | **`adviso-compare CI passed`** |
 | Runtime verification | Full suite on all seven combinations in the matrix above, including clean wheel and source-archive installations |
-| Formatting/lint verification | **adviso-compare / Ruff** |
-| Preferred distribution artefact | `adviso-compare-ubuntu-24.04-python-3.11` |
-| Other CI evidence | Six remaining matrix artefacts and workflow logs; retain before the 30-day artefact expiry |
-| Evidence layout | `distributions/` contains the two archives and `wheel-dependencies.txt` / `sdist-dependencies.txt`; the artefact also includes `tests.xml`, `commit.txt`, `python.txt`, `platform.txt`, and `test-dependencies.txt`, possibly under intermediate directories |
+| Quality verification | **adviso-compare / Ruff**, including release-preparation tests |
+| Draft-preparation job | **adviso-compare / Prepare draft release**, after successful tag CI |
+| Automated distribution source | `adviso-compare-ubuntu-24.04-python-3.11`; CI copies its tested archives without rebuilding |
 | Distribution filenames | `adviso_compare-<version>-py3-none-any.whl` and `adviso_compare-<version>.tar.gz` |
+| Additional release assets | `release-verification.md`, `verification-evidence.zip`, `SHA256SUMS.txt` |
 | Supported schema combination | Configuration `1.0`, results `1.0` |
-| Additional release checks | Offline guide/examples and packaged schemas; the full suite includes these checks |
+| Documentation/schema verification | Offline guide/examples and packaged schemas, included in the full suite |
 
-From the repository root, install the tagged source and check its derived version:
+The development-only script [adviso_compare_release.py](../../.github/scripts/adviso_compare_release.py)
+validates the tag, merged source, successful jobs, source identifiers, JUnit
+results, distribution versions, and required evidence before assembling the
+assets. Its [tests](../../.github/scripts/test_adviso_compare_release.py) use small
+synthetic artefacts and mocked GitHub commands; they do not create releases.
+To run them locally with development dependencies installed:
 
 ```console
-python -m pip install -e "packages/adviso-compare[dev]"
-adviso-compare --version
+python -m pytest .github/scripts/test_adviso_compare_release.py -q
+python -m ruff format --check packages/adviso-compare
+python -m ruff check packages/adviso-compare
+python -m ruff format --check --config packages/adviso-compare/pyproject.toml .github/scripts
+python -m ruff check --config packages/adviso-compare/pyproject.toml .github/scripts
 ```
 
-After tagging `adviso-compare-v1.0.0`, the expected output is
-`adviso-compare 1.0.0`. Version derivation selects only `adviso-compare-v` tags;
-unrelated tools' tags do not set this package's version. `_version.py` is generated.
+Only the draft-preparation job has repository write permission. It uses the
+GitHub-hosted runner's GitHub CLI and workflow token; maintainers do not need a
+local CLI or additional secret. It never publishes a release. A preparation
+retry preserves edited draft notes, replaces generated assets, and refuses to
+modify a published release.
+
+Version derivation selects only `adviso-compare-v` tags; unrelated tools' tags
+do not set this package's version. `_version.py` is generated. For example,
+a clean checkout tagged `adviso-compare-v1.0.0` builds as `adviso-compare 1.0.0`.

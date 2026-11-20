@@ -224,7 +224,13 @@ source-archive installations. Each installation resolves its own dependencies
 and runs outside the checkout. The
 [CI workflow](../../../.github/workflows/adviso-compare-ci.yml) exercises the
 routine Python/OS matrix; its scope and merge settings are explained in the
-[contribution guide](../CONTRIBUTING.md#continuous-integration).
+[contribution guide](../CONTRIBUTING.md#continuous-integration). For package tag
+pushes, a final job uses the development-only
+[release-preparation script](../../../.github/scripts/adviso_compare_release.py)
+to validate the run's evidence and attach tested distributions, checksums, and
+verification records to a draft GitHub Release. It does not rebuild those files
+or publish the release. The script's tests live beside it and run once in the
+quality job; neither script is part of the installed tool.
 
 ## Where to make a change
 

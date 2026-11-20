@@ -43,11 +43,39 @@ jobs:
           python -m pip install './packages/adviso-compare[dev]'
           python -m pip check
 
+      - name: Record quality-check environment
+        run: |
+          mkdir -p ci-output/quality
+          python --version > ci-output/quality/python.txt
+          python -c "import platform; print(platform.platform()); print(platform.machine())" > ci-output/quality/platform.txt
+          git rev-parse HEAD > ci-output/quality/commit.txt
+          python -m pip list --format=freeze > ci-output/quality/test-dependencies.txt
+          python -m ruff --version > ci-output/quality/ruff-version.txt
+
       - name: Check Python formatting
-        run: python -m ruff format --check packages/adviso-compare
+        run: |
+          python -m ruff format --check packages/adviso-compare | tee ci-output/quality/format.txt
+          python -m ruff format --check --config packages/adviso-compare/pyproject.toml .github/scripts | tee -a ci-output/quality/format.txt
 
       - name: Check Python lint rules
-        run: python -m ruff check packages/adviso-compare
+        run: |
+          python -m ruff check packages/adviso-compare | tee ci-output/quality/lint.txt
+          python -m ruff check --config packages/adviso-compare/pyproject.toml .github/scripts | tee -a ci-output/quality/lint.txt
+
+      - name: Test draft-release preparation
+        run: >-
+          python -m pytest .github/scripts/test_adviso_compare_release.py -q
+          --junitxml=ci-output/quality/release-tests.xml
+
+      - name: Retain quality-check evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: adviso-compare-quality
+          retention-days: 30
+          overwrite: true
+          if-no-files-found: warn
+          path: ci-output/quality/*
 
   test:
     name: adviso-compare / ${{ matrix.os }} / Python ${{ matrix.python }}
@@ -114,6 +142,7 @@ jobs:
         with:
           name: adviso-compare-${{ matrix.os }}-python-${{ matrix.python }}
           retention-days: 30
+          overwrite: true
           if-no-files-found: warn
           path: |
             ci-output/*.txt
@@ -136,3 +165,41 @@ jobs:
         run: |
           test "$MATRIX_RESULT" = success
           test "$QUALITY_RESULT" = success
+
+  release:
+    name: adviso-compare / Prepare draft release
+    needs: ci
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/adviso-compare-v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out source and version history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require source merged to main
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+      - name: Select Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.11'
+
+      - name: Install release-preparation dependencies
+        run: python -m pip install './packages/adviso-compare[dev]'
+
+      - name: Assemble verified files and create or refresh the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python .github/scripts/adviso_compare_release.py
+          --inputs ci-output/release-input
+          --output ci-output/release-candidate
