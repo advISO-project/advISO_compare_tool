@@ -1,13 +1,13 @@
-# Agent guidance for the AdvISO validation toolkit
+# Agent guidance for `adviso-compare`
 
-Follow the repository [contribution guide](CONTRIBUTING.md) and the applicable
-package contribution guide. Their development policies apply equally to human
-contributors and agents. This file adds agent-specific working instructions;
-it does not define product behaviour or a separate development policy.
+Follow the [contribution guide](CONTRIBUTING.md). Its development policies apply
+equally to human contributors and agents. This file adds agent-specific working
+instructions; it does not define product behaviour or a separate development
+policy.
 
 ## Before starting
 
-- Read the selected package's README and contribution guide. Use the shared
+- Read the README and contribution guide. Use the
   [sources-of-truth guidance](CONTRIBUTING.md#sources-of-truth) to locate its
   behavioural contract, schemas, and verification requirements.
 - Inspect the worktree before editing so you can distinguish existing user

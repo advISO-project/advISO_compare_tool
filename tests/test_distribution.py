@@ -59,14 +59,12 @@ def _installed_executable(environment: Path) -> Path:
 
 
 @pytest.mark.parametrize("unrelated_tag", ["v99.0.0", "another-tool-v99.0.0"])
-def test_package_version_ignores_other_release_tag_namespaces(
+def test_version_ignores_tags_without_the_release_prefix(
     tmp_path: Path, unrelated_tag: str
 ) -> None:
-    """A different tool's release cannot change this package's derived version."""
+    """Only tags with the configured release prefix affect the derived version."""
     source_project = Path(__file__).resolve().parents[1]
-    project = tmp_path / "packages" / "adviso-compare"
-    project.mkdir(parents=True)
-    configuration = project / "pyproject.toml"
+    configuration = tmp_path / "pyproject.toml"
     configuration.write_bytes((source_project / "pyproject.toml").read_bytes())
 
     def version() -> str:
@@ -164,12 +162,18 @@ def test_distributions_and_installed_executable_cover_the_product_path(
     )
     assert {f"src/{member}" for member in REQUIRED_PACKAGE_MEMBERS} <= sdist_members
     assert {
+        "docs/implementation-guide.md",
         "docs/user-guide.md",
         "docs/examples/automatic/query.csv",
         "docs/examples/automatic/reference.csv",
         "docs/examples/custom/configuration.yaml",
         "docs/examples/custom/query.csv",
         "docs/examples/custom/reference.json",
+        "tests/__init__.py",
+        "tests/support/__init__.py",
+        "tests/support/documents.py",
+        "tests/support/evidence.py",
+        "tests/support/schemas.py",
     } <= sdist_members
 
     environment = tmp_path / "installed"

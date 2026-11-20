@@ -1,33 +1,24 @@
-# Contributing to the advISO validation toolkit
+# Contributing to `adviso-compare`
 
-The tools in this repository are independently installable with independent
-versions, dependencies, and release schedules. This guide defines the shared development and
-release process, package guides supply commands, supported environments,
-behavioural sources, and any additional verification requirements.
-These development guidelines apply to human contributors and agents alike.
+This guide covers development, verification, and release preparation for
+`adviso-compare`. Its policies apply equally to human contributors and agents.
+Run commands from the repository root unless stated otherwise.
 
-## Where guidance belongs
-
-| Location | Purpose |
+| Document | Purpose |
 | --- | --- |
-| Repository README | Tool catalogue and repository overview. |
-| This guide | Shared development policy, code quality, testing, safety, and release procedure for all contributors. |
-| `AGENTS.md` files | Agent-specific working instructions and pointers to the shared policy. |
-| Package README | Tool overview, behavioural sources, and developer entry points. |
-| Package contribution guide | Supported runtimes, exact commands, fixtures, CI and release details, and exceptions to shared conventions. |
-| Package `docs/` | User documentation and implementation guidance. |
-| Package `tests/` | Executable verification and controlled synthetic fixtures. |
-
-Tool-specific implementation and dependencies should be kept within the relevant package.
-Shared code or tooling should follow a concrete need agreed for the affected
-packages. Shared procedures do not require a shared Python environment, wheel,
-software version, dependency selection, or release date.
+| [README](README.md) | Tool overview, support status, and entry points. |
+| This guide | Development policies, setup, checks, CI, and release preparation. |
+| [AGENTS.md](AGENTS.md) | Agent-specific working instructions. |
+| [User guide](docs/user-guide.md) | User-facing behaviour and semantic rules. |
+| [Implementation guide](docs/implementation-guide.md) | Architecture, data flow, and maintenance guidance. |
 
 ## Sources of truth
 
-Before working on a package, read its README and contribution guide to identify
-its behavioural contract, authoritative schemas, development procedures, and
-verification requirements.
+Start with the [user guide](docs/user-guide.md) and the relevant packaged
+[schema definitions](src/adviso_compare/schemas/). The guide defines observable
+behaviour and semantic rules; the schemas define document structure and
+structural constraints. The [implementation guide](docs/implementation-guide.md)
+explains how these are implemented and provides a change map.
 
 Tests and controlled fixtures verify the documented contract; they do not
 override it or supply undocumented requirements. If the sources disagree, report
@@ -36,12 +27,14 @@ choose an interpretation, weaken a requirement, or invent behaviour.
 
 ## Development environments
 
-Use an isolated Python environment with a version supported by the selected
-tool. Each tool declares its dependency-management policy and installation
-command. Developers may use their preferred environment manager, provided the
-resulting environment supports those commands. Python's built-in `venv` and
-`pip` provide the documented baseline; no alternative environment manager is
-required.
+Linux is fully supported with CPython 3.11–3.15. Windows and macOS are expected
+to work, with full CI coverage on CPython 3.15 only. Python 3.11 is the installation
+minimum; use the latest available patch release. Additional combinations need
+verification before joining the verified matrix.
+
+Use an isolated Python environment. Developers may use their preferred environment
+manager, provided it supports the documented commands. Python's built-in `venv`
+and `pip` provide the baseline; no alternative environment manager is required.
 
 Activate an existing isolated environment, or create one at the repository root:
 
@@ -52,21 +45,29 @@ python -m venv .venv
 
 On Windows Command Prompt, activate it with `.venv\Scripts\activate`; in
 PowerShell, use `.venv\Scripts\Activate.ps1`. Run installation, testing, and
-build commands using that environment's Python interpreter. Follow the package
-guide to install its development dependencies; installing one tool does not
-establish the development environment for another.
+build commands using that environment's Python interpreter. Install the package
+and its development dependencies:
+
+```console
+python -m pip install -e ".[dev]"
+```
+
+This editable installation makes source changes available to the installed
+`adviso-compare` command. Git-derived versions use `setuptools-scm`;
+`src/adviso_compare/_version.py` is generated, not maintained by hand. Build and
+development environments require `setuptools-scm` 10.3.4 or later for the
+configured tag prefix.
 
 ## Working on a change
 
-1. Read the selected package's contribution guidance and relevant behavioural
-   documentation in full, including cross-referenced rules and schema
-   definitions. Identify the specified behaviours affected by the change.
+1. Read the relevant behavioural documentation in full, including
+   cross-referenced rules and schema definitions. Identify the specified behaviours affected by the change.
 2. Run relevant existing tests to establish a baseline.
 3. For an approved behavioural change or defect fix, adapt existing tests where
    possible and add focused coverage for uncovered behaviour. Confirm that a
    new regression fails for the expected reason before implementing the fix.
-4. Keep implementation changes scoped to the selected package. Run focused
-   checks during development, then proportionate wider tests, static checks,
+4. Keep changes focused on the agreed scope. Run focused checks during
+   development, then proportionate wider tests, static checks,
    schema checks, and packaging checks.
 5. Keep schemas, examples, user documentation, and implementation aligned. Update
    implementation guidance when responsibilities or data flow change.
@@ -80,8 +81,8 @@ discarded ideas, historical decisions, or renamed and removed properties.
 
 For documentation-only work, check links and examples. Run documentation and
 installed-distribution checks when changing published instructions or installed
-files. A change to a shared procedure needs review against each affected tool's
-configuration; it does not automatically require rerunning every behavioural test.
+files. Review procedure changes against the configuration they describe; they
+do not automatically require rerunning every behavioural test.
 
 ## Change control
 
@@ -102,7 +103,7 @@ seek a decision rather than encoding an undocumented assumption.
 
 ## Code quality
 
-- Follow PEP 8 and write idiomatic Python compatible with the package's supported
+- Follow PEP 8 and write idiomatic Python compatible with the supported
   Python versions.
 - Follow PEP 257 for public-module, class, function, and method docstrings;
   document intent and constraints rather than restating the code.
@@ -132,11 +133,15 @@ edit. Project-wide tooling choices require deliberate configuration and approval
 
 ## Formatting and linting
 
-Python tools use Ruff for formatting and linting, configured in each package's
-`pyproject.toml` and installed through its development dependencies. The shared
-formatting target is 88 characters; syntax modernisation must respect each
-package's minimum supported Python version. Check production Python and tests,
+Ruff is configured in [pyproject.toml](pyproject.toml) and pinned in the
+development dependencies. It checks application code, tests, and `.github/scripts/`,
 excluding generated version files, virtual environments, and build outputs.
+The formatting target is 88 characters and the syntax target is Python 3.11.
+
+```console
+python -m ruff format --check .
+python -m ruff check .
+```
 
 | Rules | Purpose |
 | --- | --- |
@@ -145,25 +150,29 @@ excluding generated version files, virtual environments, and build outputs.
 | `B` | Common bug-prone constructs. |
 | `UP` | Compatible Python syntax modernisation. |
 
-Each package documents exact commands and any narrowly scoped rule exceptions.
-Review automatic fixes; do not apply unsafe fixes in bulk. After safe fixes and
-formatting, rerun both checks and relevant tests for substantive corrections.
-Editor integration and pre-commit hooks are optional.
+`UP042` is excluded to retain existing enums' string conversion behaviour;
+converting to `StrEnum` would be a separate behavioural change. No type checker
+is configured. Editor integration and pre-commit hooks are optional.
 
-Pin Ruff in each package's development dependencies so local and CI checks use
-matching versions. Upgrade deliberately: review release notes, assess findings
-and formatting changes without writing files first, and review cleanup separately
-from behavioural changes. Rerun checks and relevant tests before merging. Do not
-duplicate version pins in CI, hooks, or editor settings. Type checking is not a
-repository-wide requirement.
+For local cleanup:
+
+```console
+python -m ruff check --fix .
+python -m ruff format .
+```
+
+Review automatic fixes; do not apply unsafe fixes in bulk. After fixing and
+formatting, inspect the diff and rerun checks and relevant tests. Upgrade Ruff
+deliberately: assess findings and formatting changes without writing files first,
+and review cleanup separately from behavioural changes. Keep its version pin in
+`pyproject.toml`, without duplicating it in CI, hooks, or editor settings.
 
 ## Testing and fixtures
 
 Use descriptive behavioural test names and assertions. Do not embed requirement
 or acceptance-scenario identifiers in code, tests, fixtures, snapshots, package
-metadata, or runtime artefacts. Any formal
-traceability belongs in review records as a one-way reference to software
-artefacts. Every corrected material defect needs appropriate regression coverage;
+metadata, or runtime artefacts. Any formal traceability belongs in review
+records as a one-way reference to software artefacts. Every corrected material defect needs appropriate regression coverage;
 adapt existing tests where they express the rule clearly.
 
 Give parameterized cases descriptive IDs when inputs contain complex objects,
@@ -176,9 +185,8 @@ Test public behaviour and stable internal contracts rather than private
 implementation details. Exercise both directions where behaviour requires
 symmetry, boundary values, malformed inputs, and failure paths. Validate
 representative configuration and result documents against their packaged schemas.
-Include installed-entry-point and built-distribution tests as required by the
-package's verification policy. Do not update expected outputs blindly; review
-semantic changes field by field.
+Include installed-entry-point and built-distribution checks as described below.
+Do not update expected outputs blindly; review semantic changes field by field.
 
 Use controlled, synthetic, non-sensitive fixtures under version control. Keep
 purpose, configuration, inputs, and expected outcomes clear from the test or
@@ -191,10 +199,70 @@ review when none occurred.
 Keep fixtures small enough for meaningful review unless scale is the subject of
 the test.
 
-Package guides describe required coverage, helpers, special checks, and build or
-installation scenarios. Property-based and mutation testing are optional
-techniques, not mandatory release gates. Not every documentation or process rule
+Property-based and mutation testing are optional techniques, not mandatory
+release gates. Not every documentation or process rule
 needs a direct automated test.
+
+Run the full runtime suite or a focused module:
+
+```console
+python -m pytest tests -q
+python -m pytest tests/test_inputs.py -q
+```
+
+The suite covers parsing, translation, comparators, configuration/results schema
+validation, CLI behaviour and exit codes, deterministic output, documentation
+examples, and clean wheel/source installations. It exercises malformed inputs,
+both directions of missing/extra content, composite and duplicate keys, and
+tolerance boundaries.
+
+Release-preparation tests run separately, once in CI's quality job:
+
+```console
+python -m pytest .github/scripts/test_adviso_compare_release.py -q
+```
+
+Run both paths together to check all runtime and automation tests locally:
+
+```console
+python -m pytest tests .github/scripts/test_adviso_compare_release.py -q
+```
+
+Reusable synthetic documents live in `tests/support/documents.py`; builders return
+new objects on every call to avoid state leaking between tests. Fixed values are
+intentional. `tests/support/schemas.py` loads each document's packaged schema
+independently and enables JSON Schema format assertion. Evidence assertions live
+in `tests/support/evidence.py`.
+
+Additional checks are:
+
+```console
+python -m pip check
+python -m compileall -q src tests .github/scripts
+git diff --check
+```
+
+## Build distributions
+
+With the development dependencies installed, build a wheel and source archive:
+
+```console
+python -m build
+```
+
+The archives are written to the generated `dist/` directory. `MANIFEST.in`
+explicitly includes documentation and test sources, including test support
+modules, in source archives. The distribution test builds both
+archives once, then installs each into a separate fresh virtual environment.
+It resolves declared dependencies without borrowing development site-packages;
+source-archive installation also uses isolated build dependencies. These tests
+may need network access to a package index.
+
+Both installations run outside the checkout, check dependency consistency and
+installed resources, and exercise the same automatic, custom, repeated-run, and
+error scenarios. Evidence is also validated using each installed package. The
+archives and resolved dependency records remain in the pytest base temporary
+directory for the run.
 
 ## Sensitive data and repository safety
 
@@ -204,8 +272,8 @@ needs a direct automated test.
 - Confirm authorization and verify the exact target before destructive
   repository or filesystem operations.
 - Never overwrite unrelated changes to make a check pass.
-- Refer to the selected package's user guide for its operational security and
-data-governance behaviour.
+- Refer to the [user guide](docs/user-guide.md) for operational security and
+  data-governance behaviour.
 
 ## Documentation
 
@@ -215,14 +283,30 @@ validate against their applicable schemas and worked commands should produce the
 documented outcomes. A material disagreement between behavioural documentation,
 schemas, examples, and implementation must be resolved before release.
 
-Keep READMEs accurate and do not describe planned behaviour as already available.
+Keep the README accurate and do not describe planned behaviour as already available.
 Link to normative material instead of copying substantial requirements into
 explanatory documentation.
 
 Developer setup and release procedures belong in contribution guidance; user
-concepts and operational instructions belong in user documentation. Each package
-identifies its authoritative behavioural sources and which documentation and
-examples are shipped for offline use.
+concepts and operational instructions belong in user documentation. The sources
+of truth are identified above.
+
+The user guide and `docs/examples/` are installed with the distribution for
+offline use. Check runnable examples and installed copies with:
+
+```console
+python -m pytest tests/test_documentation.py tests/test_distribution.py -q
+```
+
+An editable installation does not keep installed documentation copies in sync
+with source edits. Use the maintained source guide during development; the
+distribution test checks that a fresh wheel installs the same guide.
+
+The user guide covers the complete CLI, supported inputs, automatic/custom
+configuration rules, output fields, validation, errors, limitations, and governance
+boundaries. Link to it and the schemas rather than duplicating substantial
+behavioural requirements in developer documentation. Update the implementation
+guide when responsibilities or data flow change.
 
 ## Reporting completed work
 
@@ -238,58 +322,119 @@ In a change or pull-request description, report:
 Do not claim completion while relevant tests, schemas, documentation, or packaging
 metadata are knowingly inconsistent with the implementation.
 
-## Continuous integration and merge settings
+## Continuous integration
 
-Each tool documents its workflow, verification matrix, aggregate status check,
-and retained artefacts. Python formatting/lint checks run once per workflow,
-alongside the tool's runtime tests. Dependency resolution and retention policies
-remain explicit in the package guide. Passing local tests alone does not establish
-matrix or installed-product verification.
+The workflow runs on pull requests targeting `main` (including updates to those
+pull requests), pushes to `main`, pushes of tags matching `adviso-compare-v*`,
+and manual requests.
+Pushes to development branches without an open pull request do not trigger it.
+For `adviso-compare-v*` tag pushes only, a final job prepares a draft release
+after the aggregate CI gate succeeds. Publication remains manual.
 
-The `main` branch is protected by a GitHub ruleset requiring pull requests, the
-configured status checks, and an up-to-date branch before merging. Another
-person's approval is not required by the chosen merge policy. Each package lists
-its required status check. When adding a tool, include its approved aggregate
-check in the GitHub ruleset; committing a workflow does not configure protection.
+A separate `adviso-compare / Ruff` job runs formatting and lint checks once on
+`ubuntu-24.04` with CPython 3.11. It installs the development dependencies from
+the project, including the pinned Ruff version, and checks without modifying
+files. It includes `.github/scripts/` and runs the release-preparation tests once. It runs alongside the seven runtime
+test configurations below; Ruff is not rerun in each matrix job.
 
-Rulesets are maintained on GitHub, separately from workflow files. Workflow
-changes deserve scrutiny because a PR runs the workflow from its temporary
-merged state. An aggregate gate must fail when any required dependency fails,
-is cancelled, or is skipped. Keep action pins and runner labels current through
-deliberate updates.
+Each run executes the full suite, including schema/example checks, builds,
+and clean wheel/source-archive installation scenarios, on all seven combinations
+in the verification matrix using these standard GitHub-hosted runners:
 
-CI jobs normally have read-only repository permissions. Only the tag-triggered
-draft-preparation job receives permission to write release assets; it runs after
-the required CI gate succeeds. It does not run on pull requests, branch pushes,
-or manual verification runs.
+| Runner | Architecture | CPython versions |
+| --- | --- | --- |
+| `ubuntu-24.04` | x86-64 | 3.11, 3.12, 3.13, 3.14, 3.15 |
+| `macos-15` | ARM64 | 3.15 |
+| `windows-2025` | x86-64 | 3.15 |
+
+The same full suite and matrix apply to pull requests, `main`, version-tag pushes,
+and manual runs. Linux is the fully supported deployment platform. Windows and
+macOS compatibility is checked on Python 3.15; other Python versions on those
+platforms are outside the verified matrix. No reduced test selection is used
+for any matrix job. Review this coverage when preparing a release or updating
+the support policy.
+
+These identify the environments exercised by CI, rather than every supported
+OS release or architecture. Runner images and Python patch releases can change;
+each job records the platform, architecture, Python version, checked-out commit,
+and resolved test dependencies. The distribution tests also record dependencies
+for each clean installation. Every job installs the package normally, rather
+than relying on an editable source installation, before running the full suite.
+
+Dependency version ranges are declared in `pyproject.toml`; there is no
+committed lockfile fixing the exact direct and indirect dependency versions.
+Fresh installations resolve compatible versions from those ranges, so
+developers and CI runs may receive different dependency versions over time.
+This exercises compatibility with evolving dependencies. The recorded versions
+identify what each CI run tested; they do not guarantee that a later
+installation selects the same versions.
+
+The workflow retains JUnit test results, built wheel/source archives, and
+version/dependency records for 30 days, including available reports on failure.
+It does not upload the temporary comparison datasets or evidence packages.
+A separate `adviso-compare-quality` artefact retains Ruff output, release-automation
+test results, and its environment records for the same period. Successful tag
+runs attach the verification records to the draft release for longer retention.
+Superseded pull-request runs are cancelled. Other matrix jobs continue after a
+failure to show the full set of outcomes.
+
+To reproduce the test command locally, use a supported Python environment with
+the development dependencies installed:
+
+```console
+python -c "from pathlib import Path; Path('ci-output').mkdir(exist_ok=True)"
+python -m pytest tests -q --junitxml=ci-output/tests.xml --basetemp=ci-output/tmp
+```
+
+`ci-output/` is ignored generated content. Pytest clears the selected base
+temporary directory before a run; use this command only with that disposable
+path. The normal test command above lets pytest manage its own temporary path.
+
+### Merge settings
+
+The aggregate check **`adviso-compare CI passed`** succeeds only when all seven
+runtime jobs and the Ruff/release-automation job succeed. It fails if a required
+job fails, is cancelled, or is skipped. The tag-only draft-preparation job follows
+this gate.
+
+The `main` branch is protected by a GitHub ruleset requiring a pull request, this
+status check, and an up-to-date branch before merging. Another person's approval
+is not required. Rulesets are maintained on GitHub separately from workflow files;
+committing a workflow does not configure protection.
+
+Workflow changes deserve scrutiny because a PR runs the workflow from its
+temporary merged state. Keep action pins and runner labels current through
+deliberate updates. Jobs normally have read-only repository permission. Only the
+tag-triggered draft-preparation job receives release write permission, after the
+CI gate succeeds; it does not run on pull requests, branch pushes, or manual runs.
 
 ## Versioning and compatibility
 
-Use independent software versions and release tags for each tool. The tag format
-is `<distribution-name>-v<version>`, for example `adviso-compare-v1.0.0`. Each
-tool's Git-derived version calculation and CI tag trigger must select only its
-own tag namespace. Do not rename or move existing published tags.
+Release tags use `adviso-compare-v<version>`, for example `adviso-compare-v1.0.0`.
+Git-derived version calculation and the CI tag trigger select that prefix.
+A clean checkout tagged `adviso-compare-v1.0.0` builds as version `1.0.0`.
+Do not rename or move published tags.
 
-Software and schema families have independent version identifiers. Each release
-states its supported schema versions and combinations where applicable. Before
-changing a schema, publish compatibility rules; incompatible changes need a
-migration path or documented transition arrangements. Changes to distribution,
+The software, comparison-configuration schema, and results schema have independent
+versions. The user guide and release notes identify supported schema combinations;
+unsupported versions or combinations are rejected. A configuration-format change
+does not by itself require a results-schema revision: assess results structure
+and meaning separately. Preserve schema identifiers unless a deliberate version
+change is approved.
+
+Before changing a schema, publish compatibility rules; incompatible changes need
+a migration path or documented transition arrangements. Changes to distribution,
 executable, or import-package names also need compatibility consideration.
-Package guides retain tool-specific compatibility commitments.
 
 ## Preparing a release
 
-Publication is manual. Pushing a package's release tag starts its full CI and,
+Publication is manual. Pushing a release tag starts its full CI and,
 after the required checks succeed, prepares a **draft GitHub Release** with the
 tested distributions and verification evidence. Review and complete the release
 notes before choosing **Publish release**. CI never publishes the draft.
 
-Follow the selected package's **Release details** table. The four steps below
-use `adviso-compare` and version `1.0.0` as examples; substitute the selected
-tool's tag, version, and workflow. Each tool owns its tag namespace and workflow:
-a tag for one package must not trigger another package's checks or draft release.
-When adding a tool, configure and verify that automation before using this
-procedure for its first release.
+The four steps below use version `1.0.0` and tag `adviso-compare-v1.0.0` as
+examples; substitute the intended version consistently.
 
 These steps assume no existing checkout or Python environment. You need Git on
 your computer, a GitHub account with repository write access, and ordinary Git
@@ -304,7 +449,7 @@ is needed to prepare a release; GitHub runs the verification and preparation.
    several already-merged changes. A separate release-preparation branch or PR
    is only needed if further repository changes are required.
 
-   Choose an unused semantic version and its package-specific tag, for example
+   Choose an unused semantic version and its tag, for example
    `adviso-compare-v1.0.0`. Check **Tags** and **Releases** for existing names.
    Do not move or reuse a tag for different source. You can start writing release
    notes in a local editor now, or write them in the generated draft in step 3.
@@ -341,14 +486,14 @@ is needed to prepare a release; GitHub runs the verification and preparation.
    This tags the fetched `main` commit without switching branches or changing
    your working files. Check that this is the intended release point before
    pushing. The workflow containing draft preparation must already be merged
-   there. Push only the intended package's tag. The workflow checks that its
-   source is merged into `main` and that the built version matches the tag.
+   there. The workflow checks that its source is merged into `main` and that the
+   built version matches the tag.
 
 3. **Wait for verification and review the draft — GitHub web interface.**
 
-   Open **Actions**, select the package's workflow, and open the run for the
+   Open **Actions**, select **adviso-compare CI**, and open the run for the
    pushed tag. Wait for the complete workflow, including **Prepare draft
-   release**, to succeed. The package's full runtime matrix, formatting/lint
+   release**, to succeed. The full runtime matrix, formatting/lint
    checks, schema/example checks, builds, and clean installation tests must pass.
 
    Open **Releases** and edit the draft for this tag. CI attaches:
@@ -361,10 +506,10 @@ is needed to prepare a release; GitHub runs the verification and preparation.
    - `SHA256SUMS.txt`, with complete SHA-256 hashes for the other four assets.
 
    These are **release assets**, distinct from GitHub's automatically generated
-   source-code ZIP and tarball. The workflow selects the distribution source
-   listed in the package guide. The attached evidence retains verification
-   records beyond CI artefact expiry. Dependency records identify what was
-   tested; they do not fix future dependency resolution.
+   source-code ZIP and tarball. The distributions come from the tested
+   `adviso-compare-ubuntu-24.04-python-3.11` artefact. The attached evidence retains
+   verification records beyond CI artefact expiry. Dependency records identify
+   what was tested; they do not fix future dependency resolution.
 
    Complete the **Changes** and **Known limitations** sections in the draft
    notes and review its generated runtime/schema statements. Check that the
@@ -385,8 +530,7 @@ is needed to prepare a release; GitHub runs the verification and preparation.
    Once the workflow has succeeded and the notes and assets are ready, select
    **Publish release**. Stable releases should have **This is a pre-release**
    unchecked; the workflow marks prerelease versions accordingly. Choose
-   **Set as latest release** deliberately: that label is repository-wide even
-   though tools have independent versions.
+   **Set as latest release** for the current stable release as appropriate.
 
    Open the published release and confirm its notes and five attached assets
    are present. No package-index publication is configured by this process.
@@ -394,3 +538,19 @@ is needed to prepare a release; GitHub runs the verification and preparation.
 Additional independent review, signing/build attestation, property-based testing,
 and mutation testing are optional. Record them if performed; they are not
 release gates and another person's approval is not a merge requirement.
+
+### Release preparation implementation
+
+The development-only [script](.github/scripts/adviso_compare_release.py) validates
+the tag, merged source, successful jobs, commit identifiers, JUnit reports,
+distribution versions, and required evidence before assembling the five assets.
+Its [tests](.github/scripts/test_adviso_compare_release.py) use synthetic artefacts
+and mocked GitHub commands; they do not create releases. It uses the GitHub-hosted
+runner's GitHub CLI and workflow token; no additional secret is required.
+
+The distribution and executable are `adviso-compare`; the import package is
+`adviso_compare`. Distribution filenames are
+`adviso_compare-<version>-py3-none-any.whl` and
+`adviso_compare-<version>.tar.gz`. The supported schema combination is configuration
+`1.0` with results `1.0`. CI's full suite checks schemas, offline examples, and
+clean installations before preparing the draft.

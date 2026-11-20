@@ -71,8 +71,6 @@ namespaces = false
 ]
 
 [tool.setuptools_scm]
-root = "../.."
-relative_to = "pyproject.toml"
 version_file = "src/adviso_compare/_version.py"
 fallback_version = "0.0.0"
 

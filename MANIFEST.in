@@ -1,0 +1,2 @@
+recursive-include docs *.md *.csv *.json *.yaml
+recursive-include tests *.py

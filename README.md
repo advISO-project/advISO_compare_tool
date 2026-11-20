@@ -1,24 +1,62 @@
-# advISO validation toolkit
+# `adviso-compare`
 
-This repository is a collection of independently installable advISO tools that
-support bioinformatics validation and verification work. Repository membership
-groups related software; it does not imply a shared executable, Python package,
-dependency set, version, or release lifecycle.
+`adviso-compare` is a command-line tool for comparing a reference dataset of records with a query dataset of
+corresponding records. It uses explicit configuration rules to translate different source representations into a common canonical representation, then reports post-translation differences separately from issues that prevented assessment.
 
-## Tools
+The project is intended to support bioinformatics validation and verification activities associated with ISO 15189 accreditation. It produces comparison evidence; it does not determine whether a pipeline is valid, acceptable, or compliant.
 
-| Tool | Purpose | Status |
-| --- | --- | --- |
-| [`adviso-compare`](packages/adviso-compare/README.md) | Translate and compare structured reference and query datasets | Implemented; unreleased |
+## Project status
 
-Each tool lives under `packages/` with its own packaging metadata, source,
-tests, documentation, normative artefacts, and release version. `adviso-compare`
-is the first tool. Additional tools will be added as peer packages as their
-scope and implementation are agreed.
+The tool is fully supported on Linux with CPython 3.11–3.15. Windows and macOS
+are expected to work, with full CI coverage limited to CPython 3.15 on those
+platforms. Python 3.11 is the installation minimum.
 
-Developers should start with the [contribution guide](CONTRIBUTING.md), then
-follow the selected tool's developer guidance, linked from its README.
-Shared development and code-quality guidance is in the contribution guide;
-agent-specific instructions are in [`AGENTS.md`](AGENTS.md).
-Each tool identifies its behavioural documentation and any normative schemas in its
-own README.
+It supports automatic strict-exact comparisons
+and custom YAML comparison configurations across CSV, TSV, and JSON inputs. A
+non-error run produces canonical JSON results, the complete effective
+configuration as JSON, and a self-contained HTML report.
+
+For installation, commands, configuration rules, output fields, examples, and
+troubleshooting, read the [user guide](docs/user-guide.md).
+
+The basic command is:
+
+```text
+adviso-compare \
+  --reference REFERENCE \
+  --query QUERY \
+  --output OUTPUT \
+  [--configuration CONFIGURATION]
+```
+
+`--output` selects a parent directory. Each complete or incomplete run creates
+its own child named `YYYYMMDDTHHMMSSZ-<run-id>`, containing exactly
+`comparison-results.json`, `comparison-configuration.json`, and
+`comparison-report.html`. Results record the SHA-256 digest of the exact saved
+configuration bytes. Repeated runs preserve outputs from previous runs (i.e. there
+is no "overwrite" mode). The completion summary identifies the published run directory.
+
+Configuration and results each use their own root `schema_version` and are independently
+versioned. Version 1 supports results schema `1.0` with configuration schema
+`1.0`. See the user guide's
+[package-validation procedure](docs/user-guide.md#73-structural-and-semantic-validation).
+
+The behavioural contract is defined by subject:
+
+- [User guide](docs/user-guide.md): observable behaviour and semantic rules.
+- [Comparison-configuration schema](src/adviso_compare/schemas/comparison-configuration-v1.0.schema.json)
+- [Canonical-results schema](src/adviso_compare/schemas/comparison-results-v1.0.schema.json)
+
+The schemas define document structural constraints. Disagreements
+between the schemas and the guide must be resolved explicitly; tests verify
+this contract rather than override it.
+
+The distribution and executable are named `adviso-compare`; the Python import
+package is `adviso_compare`.
+
+## Development
+
+See the [contribution guide](CONTRIBUTING.md) for environment setup,
+tests, builds, CI, and release preparation. These policies apply to human
+contributors and agents; [AGENTS.md](AGENTS.md) adds agent-specific instructions.
+The [implementation guide](docs/implementation-guide.md) explains the implementation, data flow, and validation boundaries.
