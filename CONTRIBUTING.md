@@ -469,8 +469,8 @@ is needed to prepare a release; GitHub runs the verification and preparation.
    want the repository to be created:
 
    ```console
-   git clone https://github.com/advISO-project/validation_toolkit.git
-   cd validation_toolkit
+   git clone https://github.com/advISO-project/advISO_compare_tool.git
+   cd advISO_compare_tool
    ```
 
    Otherwise, open a terminal in your existing checkout's root. Confirm that

@@ -24,11 +24,11 @@ from tests.support.schemas import (
 )
 
 CONFIGURATION_SCHEMA_ID = (
-    "https://adviso-project.github.io/validation_toolkit/schemas/"
+    "https://adviso-project.github.io/advISO_compare_tool/schemas/"
     "comparison-configuration-v1.0.schema.json"
 )
 RESULTS_SCHEMA_ID = (
-    "https://adviso-project.github.io/validation_toolkit/schemas/"
+    "https://adviso-project.github.io/advISO_compare_tool/schemas/"
     "comparison-results-v1.0.schema.json"
 )
 
