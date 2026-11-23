@@ -50,10 +50,7 @@ The output is comparison evidence. Your laboratory decides how that evidence
 contributes to its validation and quality processes; the tool does not make an
 acceptance decision or establish ISO 15189 compliance.
 
-This guide defines observable behaviour and comparison semantics for the bundled
-tool. The packaged JSON schemas define permitted JSON structures and structural
-constraints. Examples illustrate the rules rather than prescribe laboratory
-comparison policies.
+This guide defines observable behaviour and comparison semantics for `adviso-compare`. The packaged JSON schemas define permitted JSON structures and structural constraints. Examples illustrate the rules rather than prescribe laboratory comparison policies.
 
 ### 1.1 Records, fields, and comparison rules
 
@@ -69,10 +66,7 @@ establish correspondence.
 
 A configuration can associate differently named source fields with one
 **canonical field**: a shared name used within the comparison. For example,
-reference field `expected` and query field `observed` could both represent the
-canonical field `measurement`. A **logical type**, such as decimal or date,
-describes how to interpret a value. A **comparator** is the rule used to decide
-whether two values match. The resulting shared representations are called
+reference field `resist_stat` and query field `res_stat` could both represent the canonical field `resistance_status`. A **logical type**, such as decimal or date, describes how to interpret a value. A **comparator** is the rule used to decide whether two values match. The resulting shared representations are called
 **canonical values**.
 
 A **parser-native value** is the value and type read from the input before
@@ -107,9 +101,7 @@ An execution error prevents a trustworthy result and produces no new package.
 ## 2. Installation
 
 `adviso-compare` requires Python 3.10 or later. It is fully supported on Linux
-with CPython 3.10, 3.11, 3.12, 3.13, 3.14, and 3.15. Windows and macOS are expected
-to work, with full CI coverage on CPython 3.10 only. You should use the latest
-available patch release of your selected Python version.
+with CPython 3.10, 3.11, 3.12, 3.13, 3.14, and 3.15. Windows and macOS are expected to work, with pre-release testing done on CPython 3.10 only. You should use the latest available patch release of your selected Python version.
 
 You can download the `.whl` file for your chosen release from
 [GitHub Releases](https://github.com/advISO-project/advISO_compare_tool/releases),
@@ -126,8 +118,7 @@ supported Python installation, you can obtain one from
 The commands are intended for a terminal. Long commands elsewhere in this guide
 use a trailing `\` to continue onto the next line in bash or zsh. In Windows
 Command Prompt or PowerShell, the equivalent command is a single line, with
-spaces in place of the continuation backslashes and line breaks. Section 3.1
-includes a single-line equivalent of the first comparison command.
+spaces in place of the continuation backslashes and line breaks.
 
 ### 2.1 Install with pip
 
@@ -191,8 +182,7 @@ adviso-compare --help
 
 The full guide is installed with the software under
 `share/doc/adviso-compare/user-guide.md` in the Python environment.
-For a `pipx` installation, this is the environment managed by `pipx`; `pipx list`
-shows where it keeps application environments.
+For a `pipx` installation, this is the environment managed by `pipx`; `pipx list` shows where it keeps application environments.
 
 ## 3. Quick start
 
@@ -245,8 +235,7 @@ directory while preserving the first. Section 6 shows the resulting layout.
 
 Automatic mode is deliberately conservative. A custom configuration is useful
 when source field names differ, values require translation, a composite key is
-needed, or automatic key selection is ambiguous. [Section 4.3](#43-automatic-mode)
-gives the full selection rules.
+needed, or automatic key selection is ambiguous. [Section 4.3](#43-automatic-mode) gives the full selection rules.
 
 ### 3.2 Read and interpret the results
 
@@ -283,7 +272,7 @@ the general nature of the finding; the code explains exactly what happened.
 Every comparison performs three phases in order:
 
 1. **Contract:** checks that configured fields are present when required and
-   can be translated under the declared null, type, validity, and mapping rules.
+   can be translated under the declared rules for types, nulls, validity, and mapping.
 2. **Records:** pairs records using their keys and identifies
    missing and extra records.
 3. **Values:** compares each assessable, in-scope, non-key field in aligned
@@ -385,14 +374,13 @@ performed.
 `review_priority` may be `low`, `normal`, or `high`. It helps organise findings
 about configured fields for human review. It does not change the comparison,
 the finding classification, run status, or exit code, and it is not a statement
-of clinical significance. Record findings do not carry a review priority; they
-are counted as `unassigned` in the priority summary.
+of clinical significance. Record findings (in contrast to field findings) do not carry a review priority; they are counted as `unassigned` in the priority summary.
 
 ## 4. Command and input reference
 
 ### 4.1 Command options and exit codes
 
-The command has no subcommands:
+Standard usage:
 
 ```text
 adviso-compare \
@@ -411,9 +399,8 @@ adviso-compare \
 | `--version` | Print the installed version and exit. |
 | `--help` | Print concise help and exit. |
 
-`--output` selects a parent directory. Each complete or incomplete run
-creates its own directory there and preserves existing content. Section 6
-explains directory names, permissions, and publication errors.
+`--output` selects a parent directory/folder. Each complete or incomplete run
+creates its own sub-folder within the specified output folder and preserves existing content. Section 6 explains directory names, permissions, and publication errors.
 
 The command prints a short completion summary to standard output. An execution
 error is printed to standard error. Comparison attempts emit no progress stream.
@@ -426,8 +413,8 @@ The exit codes are:
 | `2` | Expected operational error, such as an invalid option, configuration, input, key, resource condition, or output destination. No evidence package is written. |
 | `3` | Unexpected internal error. No evidence package is written. |
 
-Exit code `0` means the configured comparison completed. It does not indicate
-acceptance of the query or its pipeline.
+Exit code `0` means the configured comparison completed - it does not indicate
+"validity" of the query dataset (or the pipeline that generated it).
 
 ### 4.2 Input datasets
 
@@ -460,7 +447,7 @@ only one record:
 
 A single root object is not accepted. Every array item must be an object.
 Top-level record field names must be non-empty and unique. Duplicate member
-names anywhere in the JSON are rejected.
+names anywhere in the JSON are give rise to an error.
 
 JSON strings, integers, decimals, booleans, nulls, arrays, and objects retain
 their natural JSON type. Decimal numbers are read exactly without first being
@@ -468,11 +455,7 @@ converted to binary floating point, and their original spelling is retained as
 evidence. `NaN` and infinities are not valid JSON numbers.
 
 Numbers without a fraction or exponent are integers; numbers with either are
-decimals. Under `preserved_exact`, categories must agree: integer `1` and decimal
-`1.0` differ, while decimals `1.0`, `1.00`, and `1e0` match numerically. Arrays
-compare recursively in order; objects compare recursively by member name and
-value, regardless of member order. An empty member name is accepted inside an
-object-valued field, but not as a top-level record field name.
+decimals. Under `preserved_exact`, categories must agree: integer `1` and decimal `1.0` differ, while decimals `1.0`, `1.00`, and `1e0` match numerically. Arrays compare recursively in order; objects compare recursively by member name and value, regardless of member order.
 
 #### 4.2.3 Empty datasets
 
@@ -523,22 +506,13 @@ content. For example, JSON integer `1` does not equal JSON string `"1"`.
 Fields found on only one side are reported as exclusions, not differences.
 
 The tool creates an effective configuration internally and saves it as
-`comparison-configuration.json` alongside the results and report.
-It uses `schema_version: "1.0"`, metadata ID
-`adviso-compare:automatic-strict-exact`, and metadata revision `"1.0"`.
-The key is required and non-nullable on both sides. Other shared fields are
-optional, allow null with null equal to null, and use `preserved_exact` without
-additional processing. Canonical names and source names are identical. The
-`record_key` contains only the selected key; `in_scope` lists that key first,
-then the other shared fields in Unicode code-point order. The generated
-configuration is validated before assessment begins.
+`comparison-configuration.json` alongside the results and report. The key is required and non-nullable on both sides. Other shared fields are
+optional, allow null (with nulls on each side considered equal), and use `preserved_exact` without additional processing. Canonical names and source names are identical. The `record_key` contains only the selected key; `in_scope` lists that key first, then the other shared fields in Unicode code-point order. The generated configuration is validated before assessment begins.
 
 ## 5. Custom comparison configurations
 
 A custom configuration lets you choose the record key, associate different
-source field names, and declare how values are interpreted and compared. It
-is one UTF-8 YAML document. The `.yaml` or `.yml` suffix is recommended so that
-its format is easy to recognise.
+reference and query field names, and declare how values are interpreted and compared. It is one UTF-8 YAML document. The `.yaml` or `.yml` suffix is recommended so that its format is easy to recognise.
 
 ### 5.1 A small custom comparison
 
@@ -607,8 +581,7 @@ adviso-compare \
 
 The run completes with one comparison difference and no assessment issues.
 For `S1`, `1.00` and `1` represent the same decimal value. For `S2`, `2.00` and
-`2.10` differ, producing one `value_mismatch` finding. The key identifies the
-sample; it is not counted again as a measurement comparison.
+`2.10` differ, producing one `value_mismatch` finding.
 
 ### 5.2 Runnable custom example with transformations
 
@@ -698,8 +671,7 @@ reserved automatic-mode ID
 
 A definition not listed in `in_scope` is deliberately excluded and appears once
 as `configured_field_excluded`. A source field not named by any definition on
-its side (reference or query) appears as `undeclared_field_excluded`. Neither kind
-is compared or makes a run incomplete.
+its side (reference or query) appears as `undeclared_field_excluded`. Neither kind is compared or makes a run incomplete.
 
 ### 5.5 Field definitions
 
@@ -728,8 +700,7 @@ normalisation or value mapping.
 
 For a scalar field, `logical_type` is `string`, `integer`, `decimal`, `boolean`,
 `date`, or `datetime`. Parsing is strict. In particular, CSV and TSV cells
-start as strings and are parsed only because a logical type was declared. Dates use
-`YYYY-MM-DD`. Datetimes use RFC 3339 with an explicit timezone.
+start as strings and are parsed only because a logical type was declared. Dates use `YYYY-MM-DD`. Datetimes use RFC 3339 with an explicit timezone.
 
 The tool accepts these source values for each declared type:
 
@@ -750,15 +721,9 @@ conversion or implicit rounding. Booleans are distinct from integers.
 
 Datetime input accepts uppercase or lowercase `T` and `Z`, but no space in place
 of `T`. Numeric offsets range from `+00:00` to `+23:59` and from `-00:01` to
-`-23:59`; `-00:00` is rejected because it denotes an unknown offset. Leap seconds
-are rejected. Equivalent instants compare equally; supplied fractional precision
-is retained unless explicit truncation is configured. Canonical output uses UTC
-with uppercase `T` and `Z` and removes only redundant fractional zeros.
+`-23:59`; `-00:00` is rejected because it denotes an unknown offset. Leap seconds are rejected. Equivalent instants compare equally; supplied fractional precision is retained unless explicit truncation is configured. Canonical output uses UTC with uppercase `T` and `Z` and removes only redundant fractional zeros.
 
-JSON objects cannot be converted to any of the logical types. They may be compared
-as complete, untyped JSON values using `preserved_exact`. More generally, the tool
-uses the declared logical type for parsing. Translations beyond those parsing
-rules can be described with `value_mapping`.
+JSON objects cannot be converted to any of the logical types. They may be compared as complete, untyped JSON values using `preserved_exact`. More generally, the tool uses the declared logical type for parsing. Translations beyond those parsing rules can be described with `value_mapping`.
 
 A collection uses an object:
 
@@ -787,8 +752,7 @@ A null element is reported as `invalid_field_value`.
 
 `null_policy.allowed` and `null_policy.nulls_equal` are required booleans. If
 null is not allowed, `nulls_equal` must be false. JSON null is always recognised
-as null. [Section 1.1](#11-records-fields-and-comparison-rules) describes how null
-differs from an absent field or empty text.
+as null. [Section 1.1](#11-records-fields-and-comparison-rules) describes how null differs from an absent field or empty text.
 
 Empty strings, whitespace-only strings, null, absent fields, and configured
 missing tokens remain distinct unless an explicit field policy transforms them.
@@ -819,11 +783,7 @@ null_policy:
         value: "."
 ```
 
-Each missing token describes a non-null source value using a category and a value.
-The permitted categories are `string`, `integer`, `decimal`, and `boolean`. Strings,
-integers, and decimals use a textual `value`; booleans use `true` or `false`. An
-actual JSON `null` does not need to be listed because the tool recognises it
-automatically.
+Each missing token describes a non-null source value using a category and a value. The permitted categories are `string`, `integer`, `decimal`, and `boolean`. Strings, integers, and decimals use a textual `value`; booleans use `true` or `false`. An actual JSON `null` does not need to be listed because the tool recognises it automatically.
 
 Value descriptions match by parser-native category and value after source
 normalisation, rather than by numerical spelling. Decimal descriptions `"1.0"`
@@ -878,10 +838,7 @@ side must match an entry. An unmapped value produces a `mapping_failure`; it is
 not passed through. Many source values may map to the same destination. A
 destination may be null, after which the null policy applies.
 
-A mapping destination may use `category: "null"` without a `value`. This converts
-the mapped source value to null, after which the field’s `null_policy` is applied.
-Mapping from null is not supported because an actual JSON null is recognised and
-handled before value mapping.
+A mapping destination may also use `category: "null"` without a `value`. This converts the mapped source value to null, after which the field’s `null_policy` is applied. Mapping from null is not supported because an actual JSON null is recognised andhandled before value mapping.
 
 Mapping happens after source normalisation and missing-token recognition, and
 before parsing to the logical type.
@@ -1073,9 +1030,7 @@ filesystem object. Symbolic links in ancestor directories are permitted.
 
 Each complete or incomplete run publishes a new immediate child named
 `YYYYMMDDTHHMMSSZ-<run-id>`. The timestamp and full UUID come directly from that
-result's UTC `run.completed_at` and `run.id`. Two runs can share a timestamp
-without sharing a directory. An occupied run-directory path is an error;
-the tool never replaces it or chooses a different name for that run.
+result's UTC `run.completed_at` and `run.id`. An occupied run-directory path is an error; the tool never replaces it or chooses a different name for that run.
 
 On error, no new evidence package is published and existing parent contents
 remain intact. A parent created during publication preparation may remain
@@ -1083,12 +1038,7 @@ empty. Input and configuration errors do not create it. Private temporary
 staging is cleaned up after success and, where safe, after an error.
 
 The completion summary's `Evidence package:` line identifies the published
-child. With a relative `--output`, it shows the relative parent and child.
-With an absolute `--output`, it shows only the parent basename and child; for
-a filesystem-root parent it shows only the child name. Absolute paths are not
-printed. For automation, retain the selected parent path and use the reported
-child name to locate that run. The reported directory identifies this run
-reliably; concurrent runs may finish in a different order from when they started.
+sub-folder. With a relative `--output`, it shows the relative parent and sub-folder. With an absolute `--output`, it shows only the parent basename and sub-folder; for a filesystem-root parent it shows only the sub-folder name. Absolute paths are not printed. For automation, retain the selected parent path and use the reported sub-folder name to locate that run. The reported sub-folder identifies this run reliably; concurrent runs may finish in a different order from when they started.
 
 Retention and disposal of accumulated evidence remain the laboratory's
 responsibility; the tool does not remove earlier runs or maintain a `latest`
@@ -1132,10 +1082,7 @@ explained in Section 7.2.2.
 validated results and saved configuration, with verified linkage. It adds fixed
 explanatory text and external review space, but no comparison facts. Rendering
 does not reread the original YAML. The report opens in an ordinary browser,
-works offline, and does not require scripting.
-Required styling is embedded; the report loads no external scripts, fonts,
-images, or other network resources. Its content remains available with scripting
-disabled.
+and works offline. Required styling is embedded; the report loads no external scripts, fonts, images, or other network resources. Its content remains available with scripting disabled.
 
 ## 7. JSON output reference
 
@@ -1148,8 +1095,6 @@ The evidence package contains two JSON documents with different purposes:
 
 Before publication, `adviso-compare` checks the JSON structures, the
 configuration digest, and agreement with the inputs and comparison outcomes.
-The two formats are independently versioned; the supported combination is
-configuration schema `1.0` with results schema `1.0`.
 
 The subsections below describe the fields in each document. Both schemas are
 included with the installed software.
@@ -1179,8 +1124,7 @@ All are required. Their fields are:
 Sections 5.4–5.13 describe the permitted configuration properties, values,
 constraints, and interactions; the [field-definition reference](#55-field-definitions)
 lists the settings within each `fields.definitions` entry. The same structure
-applies to a parsed custom YAML configuration and to this saved JSON document. Metadata does not change
-the comparison rules.
+applies to a parsed custom YAML configuration and to this saved JSON document. Metadata does not change the comparison rules.
 
 The saved configuration preserves explicit declarations and list order.
 Optional properties that were omitted remain absent; internal defaults are
