@@ -15,6 +15,7 @@
 - [4. Command and input reference](#4-command-and-input-reference)
   - [4.1 Command options and exit codes](#41-command-options-and-exit-codes)
   - [4.2 Input datasets](#42-input-datasets)
+  - [4.3 Automatic mode](#43-automatic-mode)
 - [5. Custom comparison configurations](#5-custom-comparison-configurations)
   - [5.1 A small custom comparison](#51-a-small-custom-comparison)
   - [5.2 Runnable custom example with transformations](#52-runnable-custom-example-with-transformations)
@@ -110,46 +111,69 @@ with CPython 3.10, 3.11, 3.12, 3.13, 3.14, and 3.15. Windows and macOS are expec
 to work, with full CI coverage on CPython 3.10 only. Use the latest available patch
 release of your selected Python version.
 
-You can install it into an existing virtual environment with `pip`, or use
-`pipx` to manage a dedicated environment for the tool. Creating a new
-environment yourself is optional.
+Download the `.whl` file for your chosen release from
+[GitHub Releases](https://github.com/advISO-project/advISO_compare_tool/releases),
+or use a wheel supplied by your laboratory. In the commands below, replace
+`/path/to/adviso_compare-VERSION-py3-none-any.whl` with the actual path and
+versioned filename on your system. Keep paths containing spaces in quotes.
 
-Check the selected environment's Python version with `python --version`.
-If it is older than 3.10, use a supported Python installation to create an
-environment before installing the tool. Installing the wheel with `pip` does
-not install or upgrade Python itself.
+You can install into an existing virtual environment with `pip`, create a new
+one, or use `pipx` to manage a dedicated environment for the tool. Installing
+the wheel with `pip` does not install or upgrade Python itself. If you have no
+supported Python installation, obtain one from [python.org](https://www.python.org/downloads/)
+or your system administrator before continuing.
 
-In the commands below, replace the example wheel path with the actual file
-supplied to you, including its versioned filename.
+Run the commands in a terminal. Long commands elsewhere in this guide use a
+trailing `\` to continue onto the next line in bash or zsh. In Windows Command
+Prompt or PowerShell, remove those continuation backslashes and join the lines
+with spaces. Section 3.1 includes a single-line equivalent of the first
+comparison command.
 
 ### 2.1 Install with pip
 
-Activate the virtual environment you want to use, then install the wheel and
-its dependencies:
+If you already have a virtual environment, activate it and continue to the
+version check below. To create a new environment, first select an installed
+Python version supported by the tool. These examples select Python 3.12;
+substitute another supported installed version if needed.
+
+On macOS or Linux, create and activate the environment with:
 
 ```console
-python -m pip install /path/to/adviso_compare-VERSION-py3-none-any.whl
-```
-
-If you prefer a new environment, create and activate one before running that
-installation command:
-
-```console
-python -m venv .venv
+python3.12 -m venv .venv
 . .venv/bin/activate
 ```
 
-On Windows Command Prompt, activate it with `.venv\Scripts\activate`; in
-PowerShell, use `.venv\Scripts\Activate.ps1`.
+On Windows, use the Python launcher to create it:
+
+```console
+py -3.12 -m venv .venv
+```
+
+Then activate it with `.venv\Scripts\activate` in Command Prompt, or
+`.venv\Scripts\Activate.ps1` in PowerShell. If you do not use the Python
+launcher, replace `py -3.12` with the path to your chosen Python executable.
+In PowerShell, precede a quoted executable path with `&`.
+
+With the environment active, check that `python` refers to Python 3.10 or later,
+then install the wheel and its dependencies:
+
+```console
+python --version
+python -m pip install "/path/to/adviso_compare-VERSION-py3-none-any.whl"
+```
 
 ### 2.2 Install with pipx
 
-If you use [pipx](https://pipx.pypa.io/stable/), install the wheel with:
+If you use [pipx](https://pipx.pypa.io/stable/), select the Python interpreter
+for the tool's environment with `--python`. Choose an installed version
+supported by both `adviso-compare` and your version of `pipx`; `pipx` may require
+a newer Python than the tool's 3.10 minimum. This example selects Python 3.12:
 
 ```console
-pipx install /path/to/adviso_compare-VERSION-py3-none-any.whl
+pipx install --python 3.12 "/path/to/adviso_compare-VERSION-py3-none-any.whl"
 ```
 
+You can also give `--python` the full path to your chosen Python executable.
 `pipx` creates and manages a separate virtual environment for `adviso-compare`
 and makes the command available on your PATH. There is no need to activate
 that environment to run the command.
@@ -182,8 +206,6 @@ explore the results. Section 5 shows how to supply your own configuration.
 same field names and representations. It generates the comparison configuration
 for you. To try it, omit `--configuration`.
 
-#### 3.1.1 Runnable automatic example
-
 Copy the `examples` directory installed next to this guide into a writable
 working directory outside the Python environment. Keep its `automatic` and
 `custom` subdirectories together, then change into the copied `examples`
@@ -197,6 +219,12 @@ adviso-compare \
   --reference automatic/reference.csv \
   --query automatic/query.csv \
   --output automatic-evidence
+```
+
+The single-line equivalent for Windows Command Prompt or PowerShell is:
+
+```console
+adviso-compare --reference automatic/reference.csv --query automatic/query.csv --output automatic-evidence
 ```
 
 The example has no `record_id`. `sample_id` is the only valid key candidate, so
@@ -218,43 +246,8 @@ run directory while preserving the first. Section 6 shows the resulting layout.
 
 Automatic mode is deliberately conservative. Use a custom configuration when
 source field names differ, values require translation, a composite key is
-needed, or automatic key selection is ambiguous.
-
-#### 3.1.2 How automatic mode selects fields and keys
-
-`adviso-compare` discovers fields from CSV/TSV headers and from the union of
-member names across all JSON records. It matches names exactly, including case
-and whitespace, without aliases or Unicode normalisation. It selects the record
-key as follows:
-
-1. If both sides contain `record_id`, that field is used. It must contain a
-   unique, non-null string in every record on both sides. An invalid shared
-   `record_id` causes an error; the tool does not fall back to another field.
-2. Otherwise, a candidate must be a shared field containing a unique,
-   non-null string in every record on both sides, with at least one value shared
-   between the datasets.
-3. Exactly one candidate must remain. No candidate or more than one candidate
-   is an `input.invalid_record_key` error.
-
-Candidates use preserved strings without conversion or normalisation. The tool
-does not rank candidates by name, column position, or degree of overlap, and
-does not construct composite keys automatically.
-
-The selected key is compared as a typed string. All other shared fields are
-compared using strict parser-native equality: value types must match as well as
-content. For example, JSON integer `1` does not equal JSON string `"1"`.
-Fields found on only one side are reported as exclusions, not differences.
-
-The tool creates an effective configuration internally and saves it as
-`comparison-configuration.json` alongside the results and report.
-It uses `schema_version: "1.0"`, metadata ID
-`adviso-compare:automatic-strict-exact`, and metadata revision `"1.0"`.
-The key is required and non-nullable on both sides. Other shared fields are
-optional, allow null with null equal to null, and use `preserved_exact` without
-additional processing. Canonical names and source names are identical. The
-`record_key` contains only the selected key; `in_scope` lists that key first,
-then the other shared fields in Unicode code-point order. The generated
-configuration is validated before assessment begins.
+needed, or automatic key selection is ambiguous. [Section 4.3](#43-automatic-mode)
+gives the full selection rules.
 
 ### 3.2 Read and interpret the results
 
@@ -364,10 +357,11 @@ The possible run statuses are:
 - `error`: no trustworthy comparison result could be produced, for example
   because an input was malformed or a record key was invalid.
 
-The contract, records, and values phases each have a status of `complete` or
-`incomplete`. Overall run status is `complete` only when all three phases are
-complete. An errored run has no evidence package and therefore no reported
-phase statuses.
+In a published evidence package, the contract and records phases are always
+`complete`. The values phase is `incomplete` when at least one value opportunity
+is not assessable, and `complete` otherwise. The overall run status therefore
+matches the values-phase status. An errored run has no evidence package and
+therefore no reported phase statuses.
 
 Contract findings do not themselves make the contract phase incomplete: the
 check was performed and found a problem. Likewise, missing and extra records
@@ -511,6 +505,42 @@ contract findings do not change those phase statuses. In automatic mode, shared
 `record_id` headers permit selection even when both tabular datasets are empty;
 other automatic candidates require at least one shared value.
 
+### 4.3 Automatic mode
+
+`adviso-compare` discovers fields from CSV/TSV headers and from the union of
+member names across all JSON records. It matches names exactly, including case
+and whitespace, without aliases or Unicode normalisation. It selects the record
+key as follows:
+
+1. If both sides contain `record_id`, that field is used. It must contain a
+   unique, non-null string in every record on both sides. An invalid shared
+   `record_id` causes an error; the tool does not fall back to another field.
+2. Otherwise, a candidate must be a shared field containing a unique,
+   non-null string in every record on both sides, with at least one value shared
+   between the datasets.
+3. Exactly one candidate must remain. No candidate or more than one candidate
+   is an `input.invalid_record_key` error.
+
+Candidates use preserved strings without conversion or normalisation. The tool
+does not rank candidates by name, column position, or degree of overlap, and
+does not construct composite keys automatically.
+
+The selected key is compared as a typed string. All other shared fields are
+compared using strict parser-native equality: value types must match as well as
+content. For example, JSON integer `1` does not equal JSON string `"1"`.
+Fields found on only one side are reported as exclusions, not differences.
+
+The tool creates an effective configuration internally and saves it as
+`comparison-configuration.json` alongside the results and report.
+It uses `schema_version: "1.0"`, metadata ID
+`adviso-compare:automatic-strict-exact`, and metadata revision `"1.0"`.
+The key is required and non-nullable on both sides. Other shared fields are
+optional, allow null with null equal to null, and use `preserved_exact` without
+additional processing. Canonical names and source names are identical. The
+`record_key` contains only the selected key; `in_scope` lists that key first,
+then the other shared fields in Unicode code-point order. The generated
+configuration is validated before assessment begins.
+
 ## 5. Custom comparison configurations
 
 A custom configuration lets you choose the record key, associate different
@@ -592,7 +622,7 @@ sample; it is not counted again as a measurement comparison.
 ### 5.2 Runnable custom example with transformations
 
 For a richer example, use the writable copy of the `examples` directory from
-Section 3.1.1. If you are starting here, copy the installed `examples` directory
+Section 3.1. If you are starting here, copy the installed `examples` directory
 to a working directory outside the Python environment first, then change into
 that copy and run:
 
@@ -1189,9 +1219,9 @@ are rejected at the defined object levels.
 | `run.id` | Random lowercase UUID version 4 for this run. |
 | `run.status` | `complete` or `incomplete`. Error runs do not produce this JSON. |
 | `run.completed_at` | Completion time in UTC, as `YYYY-MM-DDTHH:MM:SSZ`. |
-| `phases.contract` | `complete` or `incomplete` contract-phase status. |
-| `phases.records` | `complete` or `incomplete` records-phase status. |
-| `phases.values` | `complete` or `incomplete` values-phase status. |
+| `phases.contract` | Always `complete`. |
+| `phases.records` | Always `complete`. |
+| `phases.values` | `incomplete` if any value opportunity is not assessable; otherwise `complete`. |
 | `software.name` | Always `adviso-compare`. |
 | `software.version` | Installed software version. |
 | `software.build` | Optional non-empty build identifier when one is available. |
@@ -1235,10 +1265,11 @@ properties:
 | `algorithm` | Always `sha256`. |
 | `value` | Lowercase 64-character SHA-256 digest of the exact saved `comparison-configuration.json` bytes, including the final newline. |
 
-Verify this digest against the file bytes before parsing or reserializing the
-configuration. It is not a digest of the custom source YAML. Even a whitespace
-edit to the saved JSON changes its digest. The digest establishes content
-linkage; it does not prove authenticity or laboratory approval.
+The digest covers the saved JSON bytes, not the custom source YAML. Even a
+whitespace edit changes it. Downstream software can check this link by hashing
+the original file bytes; parsing and reserializing the JSON may change those
+bytes. The digest establishes content linkage; it does not prove authenticity
+or laboratory approval.
 
 The configuration's schema version, ID, and revision are held in the saved
 document's `schema_version`, `metadata.id`, and `metadata.revision`. They are
@@ -1454,11 +1485,11 @@ No generation script is needed. Their expected stable outcomes are:
 
 | Example | Status | Comparison differences | Assessment issues |
 | --- | --- | ---: | ---: |
-| automatic (Section 3.1.1) | `complete` | 1 | 0 |
+| automatic (Section 3.1) | `complete` | 1 | 0 |
 | small custom (Section 5.1) | `complete` | 1 | 0 |
 | custom with transformations (Section 5.2) | `complete` | 3 | 0 |
 
-Run the commands in Sections 3.1.1, 5.1, and 5.2, then open the report in the run
+Run the commands in Sections 3.1, 5.1, and 5.2, then open the report in the run
 directory identified by each completion summary and check the outcomes above.
 The same output parents can be reused: each invocation
 adds a new run directory. Run IDs and completion times change on every run.
