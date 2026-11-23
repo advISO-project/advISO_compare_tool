@@ -844,6 +844,21 @@ The same matching rule applies to mapping sources.
 side is a non-empty ordered list. Operations affect only parser-native strings
 from that side. Non-strings pass through unchanged.
 
+Within a string field's definition, for example:
+
+```yaml
+source_normalisation:
+  query:
+    - operation: "trim"
+      parameters:
+        side: "both"
+    - operation: "case_fold"
+```
+
+This trims leading and trailing whitespace from query strings, then folds their
+case: `" Detected "` becomes `"detected"`. Each list item names its `operation`;
+only `trim` needs `parameters` in this example.
+
 | Operation | Parameters | Effect |
 | --- | --- | --- |
 | `unicode_normalise` | `form`: `NFC`, `NFD`, `NFKC`, or `NFKD` | Applies the named Unicode normalisation form. |
