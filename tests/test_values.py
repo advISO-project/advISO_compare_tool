@@ -329,7 +329,6 @@ def _comparison_field(
     required: bool = True,
     nullable: bool = False,
     nulls_equal: bool = False,
-    review_priority: str | None = None,
 ) -> JsonObject:
     """Create one decimal field for a mixed values-phase fixture."""
     field = _scalar_field("decimal", "numeric_exact")
@@ -342,8 +341,6 @@ def _comparison_field(
         "allowed": nullable,
         "nulls_equal": nulls_equal,
     }
-    if review_priority is not None:
-        field["review_priority"] = review_priority
     return field
 
 
@@ -368,7 +365,6 @@ def _mixed_configuration() -> JsonObject:
     definitions["difference"] = _comparison_field(
         "r_difference",
         "q_difference",
-        review_priority="high",
     )
     definitions["blocked"] = _comparison_field("r_blocked", "q_blocked")
     definitions["optional_both_absent"] = _comparison_field(
@@ -380,7 +376,6 @@ def _mixed_configuration() -> JsonObject:
         "r_optional_one",
         "q_optional_one",
         required=False,
-        review_priority="low",
     )
     definitions["nullable_both"] = _comparison_field(
         "r_nullable_both",
@@ -501,22 +496,6 @@ def test_mixed_values_phase_accounts_for_every_configured_opportunity(
             result.counts.not_assessable,
         )
     )
-    assert [
-        (finding.canonical_field, finding.review_priority)
-        for finding in result.findings
-    ] == [
-        ("difference", "high"),
-        ("nullable_mixed", "normal"),
-        ("nullable_not_equal", "normal"),
-        ("optional_one_absent", "low"),
-    ]
-    assert all(
-        finding.code == "value_mismatch"
-        and finding.classification == "comparison_difference"
-        and finding.phase == "values"
-        and finding.affected_side == "both"
-        for finding in result.findings
-    )
     assert len(contract.findings) == 1
     assert contract.findings[0].code == "missing_required_field"
     assert "excluded" not in {
@@ -575,7 +554,6 @@ def test_automatic_configuration_flows_through_the_values_phase(
         result.counts.mismatched,
         result.counts.not_assessable,
     ) == (1, 1, 0)
-    assert [finding.canonical_field for finding in result.findings] == ["different"]
 
 
 def test_value_mismatches_do_not_make_the_values_phase_incomplete(
@@ -610,4 +588,3 @@ def test_value_mismatches_do_not_make_the_values_phase_incomplete(
 
     assert result.status is ValuesPhaseStatus.COMPLETE
     assert result.counts.mismatched == 1
-    assert len(result.findings) == 1

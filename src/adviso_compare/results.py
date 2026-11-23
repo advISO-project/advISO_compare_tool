@@ -22,7 +22,7 @@ from uuid import UUID, uuid4
 from jsonschema import Draft202012Validator, FormatChecker, ValidationError
 
 from adviso_compare._version import __version__
-from adviso_compare.alignment import RecordAlignment, RecordFinding, RecordsResult
+from adviso_compare.alignment import RecordAlignment, RecordDisposition, RecordsResult
 from adviso_compare.configuration import (
     ConfigurationError,
     EffectiveConfiguration,
@@ -52,7 +52,11 @@ from adviso_compare.translation import (
     ValueDisposition,
     render_canonical_scalar,
 )
-from adviso_compare.values import ValueFinding, ValuesResult
+from adviso_compare.values import (
+    ValueOpportunity,
+    ValueOpportunityDisposition,
+    ValuesResult,
+)
 
 if TYPE_CHECKING:
     from adviso_compare.application import PreparedComparison
@@ -547,14 +551,19 @@ def _assemble_findings(
 ) -> list[JsonObject]:
     """Convert, coalesce, sort, and identify every finding candidate."""
     candidates = [
-        *(_record_finding_document(finding) for finding in records.findings),
+        *(
+            _record_finding_document(alignment)
+            for alignment in records.alignments
+            if alignment.disposition is not RecordDisposition.MATCHED
+        ),
         *(
             _contract_finding_document(configuration, records, contract, finding)
             for finding in contract.findings
         ),
         *(
-            _value_finding_document(configuration, finding)
-            for finding in values.findings
+            _value_finding_document(configuration, opportunity)
+            for opportunity in values.opportunities
+            if opportunity.disposition is ValueOpportunityDisposition.MISMATCHED
         ),
     ]
     unique: dict[tuple[object, ...], JsonObject] = {}
@@ -568,17 +577,29 @@ def _assemble_findings(
     ]
 
 
-def _record_finding_document(finding: RecordFinding) -> JsonObject:
+def _record_finding_document(alignment: RecordAlignment) -> JsonObject:
     """Build structured evidence for one missing or extra record."""
+    if alignment.disposition is RecordDisposition.MISSING:
+        code, affected_side = "missing_record", "query"
+    elif alignment.disposition is RecordDisposition.EXTRA:
+        code, affected_side = "extra_record", "reference"
+    else:
+        raise AssertionError("matched alignment cannot produce a record finding")
     return {
-        "classification": finding.classification,
-        "code": finding.code,
-        "phase": finding.phase,
-        "affected_side": finding.affected_side.value,
-        "record_identity": _record_identity(finding.alignment),
+        "classification": "comparison_difference",
+        "code": code,
+        "phase": "records",
+        "affected_side": affected_side,
+        "record_identity": _record_identity(alignment),
         "source_locations": {
-            "reference": _location_document(finding.reference_location),
-            "query": _location_document(finding.query_location),
+            "reference": _location_document(
+                alignment.reference.record.location
+                if alignment.reference is not None
+                else None
+            ),
+            "query": _location_document(
+                alignment.query.record.location if alignment.query is not None else None
+            ),
         },
     }
 
@@ -622,23 +643,22 @@ def _contract_finding_document(
 
 def _value_finding_document(
     configuration: EffectiveConfiguration,
-    finding: ValueFinding,
+    opportunity: ValueOpportunity,
 ) -> JsonObject:
     """Build complete two-sided evidence for one post-translation difference."""
-    opportunity = finding.opportunity
-    field = configuration.field(finding.canonical_field)
+    field = configuration.field(opportunity.canonical_field)
     return {
-        "classification": finding.classification,
-        "code": finding.code,
-        "phase": finding.phase,
-        "affected_side": finding.affected_side,
+        "classification": "comparison_difference",
+        "code": "value_mismatch",
+        "phase": "values",
+        "affected_side": "both",
         "record_identity": _record_identity(opportunity.alignment),
         "source_locations": {
-            "reference": _location_document(finding.reference_location),
-            "query": _location_document(finding.query_location),
+            "reference": _location_document(opportunity.reference.location),
+            "query": _location_document(opportunity.query.location),
         },
-        "field": finding.canonical_field,
-        "review_priority": finding.review_priority,
+        "field": opportunity.canonical_field,
+        "review_priority": field.review_priority,
         "values": {
             "reference": _field_evidence(
                 opportunity.reference.translated,

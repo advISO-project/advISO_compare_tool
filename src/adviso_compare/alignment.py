@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from enum import Enum
 from types import MappingProxyType
 
-from adviso_compare.inputs import InputSide, SourceLocation
 from adviso_compare.records import KeyedRecord, RecordKey, RecordModel
 
 
@@ -42,55 +41,6 @@ class RecordAlignment:
 
 
 @dataclass(frozen=True, slots=True)
-class RecordFinding:
-    """One missing- or extra-record difference for later evidence construction."""
-
-    alignment: RecordAlignment
-
-    @property
-    def code(self) -> str:
-        """Return the stable finding code implied by the alignment."""
-        if self.alignment.disposition is RecordDisposition.MISSING:
-            return "missing_record"
-        if self.alignment.disposition is RecordDisposition.EXTRA:
-            return "extra_record"
-        raise AssertionError("matched alignment cannot produce a record finding")
-
-    @property
-    def classification(self) -> str:
-        """Return the fixed classification for record differences."""
-        return "comparison_difference"
-
-    @property
-    def phase(self) -> str:
-        """Return the phase in which this difference was detected."""
-        return "records"
-
-    @property
-    def affected_side(self) -> InputSide:
-        """Return the side from which the aligned record is absent."""
-        if self.alignment.disposition is RecordDisposition.MISSING:
-            return InputSide.QUERY
-        if self.alignment.disposition is RecordDisposition.EXTRA:
-            return InputSide.REFERENCE
-        raise AssertionError("matched alignment cannot affect a side")
-
-    @property
-    def reference_location(self) -> SourceLocation | None:
-        """Return the reference record location, or None when it is absent."""
-        if self.alignment.reference is None:
-            return None
-        return self.alignment.reference.record.location
-
-    @property
-    def query_location(self) -> SourceLocation | None:
-        """Return the query record location, or None when it is absent."""
-        if self.alignment.query is None:
-            return None
-        return self.alignment.query.record.location
-
-
-@dataclass(frozen=True, slots=True)
 class RecordCounts:
     """Reconciled record counts for later canonical summary generation."""
 
@@ -106,7 +56,6 @@ class RecordsResult:
     """Complete deterministic alignment of two valid record models."""
 
     alignments: tuple[RecordAlignment, ...]
-    findings: tuple[RecordFinding, ...]
     counts: RecordCounts
     _alignment_index: Mapping[RecordKey, RecordAlignment]
 
@@ -135,7 +84,6 @@ def align_records(
         key=lambda key: tuple(component.text for component in key),
     )
     alignments: list[RecordAlignment] = []
-    findings: list[RecordFinding] = []
 
     for key in ordered_keys:
         reference_record = reference.by_key.get(key)
@@ -155,8 +103,6 @@ def align_records(
             disposition=disposition,
         )
         alignments.append(alignment)
-        if disposition is not RecordDisposition.MATCHED:
-            findings.append(RecordFinding(alignment))
 
     matched = sum(
         alignment.disposition is RecordDisposition.MATCHED for alignment in alignments
@@ -170,7 +116,6 @@ def align_records(
     alignment_tuple = tuple(alignments)
     return RecordsResult(
         alignments=alignment_tuple,
-        findings=tuple(findings),
         counts=RecordCounts(
             reference=len(reference.records),
             query=len(query.records),

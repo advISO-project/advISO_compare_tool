@@ -119,6 +119,11 @@ Returning `ContractResult` or `RecordsResult` implies that phase completed;
 results assembly records their fixed `complete` statuses. `ValuesResult` carries
 a status because blocked value opportunities can make that phase incomplete.
 
+Results assembly derives record and value findings directly from missing/extra
+alignments and mismatched value opportunities. Contract assessment retains
+separate findings for causal issues, including dataset-level issues without a
+record.
+
 The configuration has two complementary representations. Domain fields have
 defaults resolved for execution, while the saved document preserves the
 selected configuration, including omitted optional properties. Saving does not

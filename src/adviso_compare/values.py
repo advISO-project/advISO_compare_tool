@@ -8,13 +8,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal
 
 from adviso_compare.alignment import RecordAlignment, RecordsResult
 from adviso_compare.comparators import compare_translated_values
 from adviso_compare.configuration import EffectiveConfiguration
 from adviso_compare.contract import ContractResult, FieldAssessment
-from adviso_compare.inputs import InputSide, SourceLocation
+from adviso_compare.inputs import InputSide
 from adviso_compare.translation import ValueDisposition
 
 
@@ -45,49 +44,6 @@ class ValueOpportunity:
 
 
 @dataclass(frozen=True, slots=True)
-class ValueFinding:
-    """One post-translation value difference for later evidence construction."""
-
-    opportunity: ValueOpportunity
-    review_priority: str
-
-    @property
-    def code(self) -> str:
-        """Return the stable value-difference finding code."""
-        return "value_mismatch"
-
-    @property
-    def classification(self) -> str:
-        """Return the fixed classification for post-translation differences."""
-        return "comparison_difference"
-
-    @property
-    def phase(self) -> str:
-        """Return the phase in which the difference was detected."""
-        return "values"
-
-    @property
-    def affected_side(self) -> Literal["both"]:
-        """Return the fixed two-sided scope of a value comparison."""
-        return "both"
-
-    @property
-    def canonical_field(self) -> str:
-        """Return the compared canonical field name."""
-        return self.opportunity.canonical_field
-
-    @property
-    def reference_location(self) -> SourceLocation:
-        """Return the reference field or containing-record location."""
-        return self.opportunity.reference.location
-
-    @property
-    def query_location(self) -> SourceLocation:
-        """Return the query field or containing-record location."""
-        return self.opportunity.query.location
-
-
-@dataclass(frozen=True, slots=True)
 class ValueCounts:
     """Complete counts of in-scope non-key value opportunities."""
 
@@ -102,7 +58,6 @@ class ValuesResult:
 
     status: ValuesPhaseStatus
     opportunities: tuple[ValueOpportunity, ...]
-    findings: tuple[ValueFinding, ...]
     counts: ValueCounts
 
 
@@ -116,7 +71,6 @@ def compare_values(
         set(configuration.in_scope) - set(configuration.record_key)
     )
     opportunities: list[ValueOpportunity] = []
-    findings: list[ValueFinding] = []
 
     for alignment in records.matched:
         if alignment.reference is None or alignment.query is None:
@@ -146,15 +100,6 @@ def compare_values(
                 disposition=disposition,
             )
             opportunities.append(opportunity)
-            if disposition is ValueOpportunityDisposition.MISMATCHED:
-                findings.append(
-                    ValueFinding(
-                        opportunity=opportunity,
-                        review_priority=configuration.field(
-                            canonical_field
-                        ).review_priority,
-                    )
-                )
 
     matched = sum(
         item.disposition is ValueOpportunityDisposition.MATCHED
@@ -174,7 +119,6 @@ def compare_values(
     return ValuesResult(
         status=status,
         opportunities=tuple(opportunities),
-        findings=tuple(findings),
         counts=ValueCounts(
             matched=matched,
             mismatched=mismatched,

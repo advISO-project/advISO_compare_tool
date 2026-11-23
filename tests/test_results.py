@@ -160,6 +160,8 @@ def test_complete_result_reconciles_findings_summaries_and_provenance(
     tmp_path: Path,
 ) -> None:
     """A complete mixed comparison becomes coherent canonical evidence."""
+    configuration = minimal_configuration()
+    configuration["fields"]["definitions"]["measured_value"]["review_priority"] = "high"
     prepared = _prepare(
         tmp_path,
         (
@@ -170,7 +172,7 @@ def test_complete_result_reconciles_findings_summaries_and_provenance(
             '[{"query_id":"S3","observed_value":3,"query_note":"q"},'
             '{"query_id":"S1","observed_value":2}]'
         ),
-        minimal_configuration(),
+        configuration,
     )
 
     result = _assemble(prepared)
@@ -198,16 +200,33 @@ def test_complete_result_reconciles_findings_summaries_and_provenance(
         "mismatched": 1,
         "not_assessable": 0,
     }
-    assert [finding["code"] for finding in result["findings"]] == [
-        "missing_record",
-        "extra_record",
-        "value_mismatch",
+    assert [
+        (finding["code"], finding["phase"], finding["affected_side"])
+        for finding in result["findings"]
+    ] == [
+        ("missing_record", "records", "query"),
+        ("extra_record", "records", "reference"),
+        ("value_mismatch", "values", "both"),
     ]
     assert [finding["id"] for finding in result["findings"]] == [
         "F000001",
         "F000002",
         "F000003",
     ]
+    assert [finding["record_identity"] for finding in result["findings"]] == [
+        {"reference": ["S2"], "query": None, "canonical": ["S2"]},
+        {"reference": None, "query": ["S3"], "canonical": ["S3"]},
+        {"reference": ["S1"], "query": ["S1"], "canonical": ["S1"]},
+    ]
+    assert [finding["source_locations"] for finding in result["findings"]] == [
+        {"reference": {"json_pointer": "/0"}, "query": None},
+        {"reference": None, "query": {"json_pointer": "/0"}},
+        {
+            "reference": {"json_pointer": "/1/expected_value"},
+            "query": {"json_pointer": "/1/observed_value"},
+        },
+    ]
+    assert result["findings"][2]["review_priority"] == "high"
     assert result["findings"][2]["values"] == {
         "reference": {
             "state": "present",
@@ -226,8 +245,8 @@ def test_complete_result_reconciles_findings_summaries_and_provenance(
     }
     assert result["summary"]["findings"]["by_review_priority"] == {
         "low": 0,
-        "normal": 1,
-        "high": 0,
+        "normal": 0,
+        "high": 1,
         "unassigned": 2,
     }
     assert result["exclusions"] == [

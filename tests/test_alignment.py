@@ -17,7 +17,7 @@ from adviso_compare.alignment import (
     align_records,
 )
 from adviso_compare.application import PreparedComparison, prepare_comparison
-from adviso_compare.inputs import InputSide, JsonLocation
+from adviso_compare.inputs import JsonLocation
 from adviso_compare.invocation import ComparisonInvocation
 from tests.support.documents import JsonObject, minimal_configuration
 
@@ -79,7 +79,6 @@ def test_reordered_inputs_have_the_same_complete_alignment(tmp_path: Path) -> No
     first_result = _align(first)
     second_result = _align(second)
 
-    assert first_result.findings == second_result.findings == ()
     assert [
         (alignment.canonical_identity, alignment.disposition)
         for alignment in first_result.alignments
@@ -183,55 +182,27 @@ def test_missing_and_extra_records_are_all_reported_deterministically(
         (alignment.canonical_identity, alignment.disposition)
         for alignment in reordered_result.alignments
     ] == alignment_outcome
-    finding_outcome = [
-        (
-            finding.code,
-            finding.affected_side,
-            finding.alignment.canonical_identity,
-            finding.alignment.reference.source_identity
-            if finding.alignment.reference is not None
-            else None,
-            finding.alignment.query.source_identity
-            if finding.alignment.query is not None
-            else None,
-        )
-        for finding in result.findings
-    ]
-    assert finding_outcome == [
-        ("missing_record", InputSide.QUERY, ("S2",), ("S2",), None),
-        ("missing_record", InputSide.QUERY, ("S3",), ("S3",), None),
-        ("extra_record", InputSide.REFERENCE, ("S4",), None, ("S4",)),
-        ("extra_record", InputSide.REFERENCE, ("S5",), None, ("S5",)),
-    ]
     assert [
         (
-            finding.code,
-            finding.affected_side,
-            finding.alignment.canonical_identity,
-            finding.alignment.reference.source_identity
-            if finding.alignment.reference is not None
+            alignment.reference.source_identity
+            if alignment.reference is not None
             else None,
-            finding.alignment.query.source_identity
-            if finding.alignment.query is not None
-            else None,
+            alignment.query.source_identity if alignment.query is not None else None,
         )
-        for finding in reordered_result.findings
-    ] == finding_outcome
-    assert all(
-        finding.classification == "comparison_difference" and finding.phase == "records"
-        for finding in result.findings
+        for alignment in result.alignments
+    ] == [
+        (("S1",), ("S1",)),
+        (("S2",), None),
+        (("S3",), None),
+        (None, ("S4",)),
+        (None, ("S5",)),
+    ]
+    assert result.alignments[1].reference.record.location == JsonLocation("/2")
+    assert reordered_result.alignments[1].reference.record.location == JsonLocation(
+        "/0"
     )
-    assert result.findings[0].reference_location == JsonLocation("/2")
-    assert result.findings[0].query_location is None
-    assert result.findings[-1].reference_location is None
-    assert result.findings[-1].query_location == JsonLocation("/0")
-    assert [
-        (finding.reference_location, finding.query_location)
-        for finding in reordered_result.findings
-    ] != [
-        (finding.reference_location, finding.query_location)
-        for finding in result.findings
-    ]
+    assert result.alignments[-1].query.record.location == JsonLocation("/0")
+    assert reordered_result.alignments[-1].query.record.location == JsonLocation("/1")
     assert result.matched == (result.alignments[0],)
     assert result.alignment(result.matched[0].key) is result.matched[0]
     assert reordered_result.counts == result.counts
@@ -247,20 +218,20 @@ def test_missing_and_extra_records_are_all_reported_deterministically(
 
 
 @pytest.mark.parametrize(
-    ("reference_text", "query_text", "expected_counts", "finding_codes"),
+    ("reference_text", "query_text", "expected_counts", "expected_dispositions"),
     [
         ("[]", "[]", (0, 0, 0, 0, 0), ()),
         (
             '[{"reference_id":"S1"}]',
             "[]",
             (1, 0, 0, 1, 0),
-            ("missing_record",),
+            (RecordDisposition.MISSING,),
         ),
         (
             "[]",
             '[{"query_id":"S1"}]',
             (0, 1, 0, 0, 1),
-            ("extra_record",),
+            (RecordDisposition.EXTRA,),
         ),
     ],
     ids=[
@@ -274,7 +245,7 @@ def test_empty_and_one_sided_datasets_reconcile_without_special_cases(
     reference_text: str,
     query_text: str,
     expected_counts: tuple[int, int, int, int, int],
-    finding_codes: tuple[str, ...],
+    expected_dispositions: tuple[RecordDisposition, ...],
 ) -> None:
     """The same union rules cover empty, reference-only, and query-only inputs."""
     prepared = _prepare(
@@ -293,4 +264,7 @@ def test_empty_and_one_sided_datasets_reconcile_without_special_cases(
         result.counts.missing,
         result.counts.extra,
     ) == expected_counts
-    assert tuple(finding.code for finding in result.findings) == finding_codes
+    assert (
+        tuple(alignment.disposition for alignment in result.alignments)
+        == expected_dispositions
+    )
