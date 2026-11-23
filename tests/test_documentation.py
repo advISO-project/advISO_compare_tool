@@ -9,8 +9,6 @@ from __future__ import annotations
 import json
 import re
 import shutil
-import subprocess
-import sys
 from pathlib import Path
 
 import pytest
@@ -125,20 +123,6 @@ def test_user_guide_examples_run_with_the_documented_outcome(
         str(outcome.comparison_differences),
         "0",
     ]
-    validation_section = guide.split(" Structural and semantic validation\n", 1)[
-        1
-    ].split("\n## ", 1)[0]
-    snippets = re.findall(r"```python\n(.*?)\n```", validation_section, re.S)
-    assert len(snippets) == 1
-    checked = subprocess.run(
-        [sys.executable, "-c", snippets[0]],
-        cwd=selected,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    assert checked.stdout == "Package checks passed for the saved evidence.\n"
-    assert checked.stderr == ""
 
 
 @pytest.mark.parametrize(

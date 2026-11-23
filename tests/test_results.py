@@ -28,14 +28,12 @@ from adviso_compare.results import (
     assemble_result,
     current_runtime_identity,
     serialize_result,
-    validate_result,
 )
 from adviso_compare.values import compare_values
 from tests.support.documents import (
     JsonObject,
     minimal_configuration,
     minimal_configuration_bytes,
-    minimal_result,
 )
 from tests.support.schemas import configuration_validator, results_validator
 
@@ -424,6 +422,17 @@ def test_dataset_level_missing_field_uses_the_distinct_compact_finding_form(
         lambda result: result["summary"]["findings"].update(total=99),
         lambda result: result["findings"][0].update(id="F000009"),
         lambda result: result["record_key_fields"].update(canonical=["wrong"]),
+        lambda result: result["summary"]["values"].update(matched=2),
+        lambda result: (
+            result["run"].update(status="incomplete"),
+            result["phases"].update(values="incomplete"),
+        ),
+        lambda result: result["comparison_configuration_digest"].update(value="0" * 64),
+        lambda result: result["inputs"]["query"].update(basename="other.json"),
+        lambda result: (
+            result["run"].update(status="incomplete"),
+            result["phases"].update(contract="incomplete"),
+        ),
     ],
     ids=[
         "run-phase-disagreement",
@@ -431,66 +440,38 @@ def test_dataset_level_missing_field_uses_the_distinct_compact_finding_form(
         "finding-total-disagreement",
         "nonsequential-finding-id",
         "wrong-canonical-key-name",
+        "wrong-matched-value-count",
+        "incomplete-without-blocked-values",
+        "configuration-digest-mismatch",
+        "wrong-input-provenance",
+        "phase-result-disagreement",
     ],
 )
-def test_semantic_validation_rejects_internally_incoherent_results(
+def test_assembly_rejects_incoherent_serialized_results(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
     mutation: object,
 ) -> None:
-    """Schema-valid-looking contradictions cannot pass self-validation."""
+    """Generated evidence must agree internally and with the original comparison."""
     prepared = _prepare(
         tmp_path,
         '[{"reference_id":"S1","expected_value":1}]',
         '[{"query_id":"S1","observed_value":2}]',
         minimal_configuration(),
     )
-    evidence = _assemble_evidence(prepared)
-    invalid = deepcopy(evidence.document())
-    mutation(invalid)  # type: ignore[operator]
 
-    with pytest.raises(ResultValidationError):
-        validate_result(
-            invalid,
-            configuration_bytes=evidence.configuration_bytes,
-            prepared=prepared,
-        )
+    def serialize_invalid_result(document: JsonObject) -> bytes:
+        invalid = deepcopy(document)
+        if "run" in invalid:
+            mutation(invalid)  # type: ignore[operator]
+        return serialize_result(invalid)
 
-
-@pytest.mark.parametrize(
-    "mutation",
-    [
-        lambda result: result["summary"]["values"].update(matched=2),
-        lambda result: (
-            result["run"].update(status="incomplete"),
-            result["phases"].update(values="incomplete"),
-        ),
-    ],
-    ids=[
-        "wrong-matched-value-count",
-        "incomplete-without-blocked-values",
-    ],
-)
-def test_semantic_validation_reconciles_opportunities_and_values_status(
-    tmp_path: Path,
-    mutation: object,
-) -> None:
-    """Value totals and completion status agree without phase-domain context."""
-    prepared = _prepare(
-        tmp_path,
-        '[{"reference_id":"S1","expected_value":1}]',
-        '[{"query_id":"S1","observed_value":1}]',
-        minimal_configuration(),
+    monkeypatch.setattr(
+        "adviso_compare.results.serialize_result", serialize_invalid_result
     )
-    evidence = _assemble_evidence(prepared)
-    invalid = deepcopy(evidence.document())
-    mutation(invalid)  # type: ignore[operator]
 
     with pytest.raises(ResultValidationError):
-        validate_result(
-            invalid,
-            configuration_bytes=evidence.configuration_bytes,
-            prepared=prepared,
-        )
+        _assemble_evidence(prepared)
 
 
 def test_finding_total_order_coalesces_duplicates_before_assigning_ids(
@@ -861,64 +842,6 @@ def _comparison_outcome(result: JsonObject) -> JsonObject:
     }
 
 
-@pytest.mark.parametrize("status", ["complete", "incomplete"])
-def test_full_validation_accepts_a_linked_result_and_saved_configuration(
-    status: str,
-) -> None:
-    """The two independent formats form coherent evidence when linked."""
-    document = minimal_result(status=status)
-    configuration_bytes = minimal_configuration_bytes()
-    results_validator().validate(document)
-    configuration_validator().validate(json.loads(configuration_bytes))
-
-    validate_result(document, configuration_bytes=configuration_bytes)
-
-
-def test_full_validation_requires_the_configuration_context() -> None:
-    """A valid results schema alone cannot establish package validity."""
-    document = minimal_result()
-    results_validator().validate(document)
-
-    with pytest.raises(ResultValidationError):
-        validate_result(document)
-
-
-def test_configuration_identity_is_taken_from_the_saved_document() -> None:
-    """Configuration metadata has one authoritative location in the package."""
-    configuration = minimal_configuration()
-    configuration["metadata"].update(id="org.example.other-rules", revision="7")
-    configuration_bytes = (json.dumps(configuration) + "\n").encode("utf-8")
-    document = minimal_result()
-    document["comparison_configuration_digest"]["value"] = sha256(
-        configuration_bytes
-    ).hexdigest()
-
-    validate_result(document, configuration_bytes=configuration_bytes)
-
-
-@pytest.mark.parametrize("change", ["whitespace", "metadata"])
-def test_configuration_byte_changes_invalidate_an_unchanged_digest(
-    change: str,
-) -> None:
-    """Byte linkage detects both formatting changes and content replacement."""
-    document = minimal_result()
-    original = minimal_configuration_bytes()
-    if change == "whitespace":
-        changed = original + b" "
-        assert json.loads(changed) == json.loads(original)
-    else:
-        configuration = json.loads(original)
-        configuration["metadata"]["revision"] = "changed"
-        changed = json.dumps(configuration).encode("utf-8")
-    assert (
-        sha256(changed).hexdigest()
-        != document["comparison_configuration_digest"]["value"]
-    )
-
-    with pytest.raises(ResultValidationError):
-        validate_result(document, configuration_bytes=changed)
-
-
 @pytest.mark.parametrize(
     "defect",
     [
@@ -929,13 +852,22 @@ def test_configuration_byte_changes_invalidate_an_unchanged_digest(
         "unknown-version",
         "structure",
         "key-not-required",
+        "effective-configuration-disagreement",
     ],
 )
-def test_full_validation_rejects_invalid_configuration_with_matching_digest(
+def test_assembly_rejects_invalid_serialized_configuration_with_matching_digest(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
     defect: str,
 ) -> None:
-    """A correct content digest does not replace syntax or semantic checks."""
+    """A digest cannot substitute for configuration validation and source agreement."""
     configuration = minimal_configuration()
+    prepared = _prepare(
+        tmp_path,
+        '[{"reference_id":"S1","expected_value":1}]',
+        '[{"query_id":"S1","observed_value":2}]',
+        configuration,
+    )
     configuration_bytes = minimal_configuration_bytes()
     if defect == "syntax":
         configuration_bytes = b"["
@@ -955,64 +887,22 @@ def test_full_validation_rejects_invalid_configuration_with_matching_digest(
             configuration["schema_version"] = "2.0"
         elif defect == "structure":
             configuration["metadata"]["revision"] = 7
-            assert not configuration_validator().is_valid(configuration)
-        else:
+        elif defect == "key-not-required":
             configuration["fields"]["definitions"]["record_id"]["required"][
                 "reference"
             ] = False
-            configuration_validator().validate(configuration)
+        else:
+            configuration["metadata"]["revision"] = "different"
         configuration_bytes = json.dumps(configuration).encode("utf-8")
-    document = minimal_result()
-    document["comparison_configuration_digest"]["value"] = sha256(
-        configuration_bytes
-    ).hexdigest()
-    results_validator().validate(document)
+
+    def serialize_invalid_configuration(document: JsonObject) -> bytes:
+        if "fields" in document:
+            return configuration_bytes
+        return serialize_result(document)
+
+    monkeypatch.setattr(
+        "adviso_compare.results.serialize_result", serialize_invalid_configuration
+    )
 
     with pytest.raises(ResultValidationError):
-        validate_result(document, configuration_bytes=configuration_bytes)
-
-
-@pytest.mark.parametrize("contradiction", ["key-source", "priority", "scope", "field"])
-def test_full_validation_rejects_cross_document_semantic_contradictions(
-    contradiction: str,
-) -> None:
-    """Valid schemas and a matching digest cannot conceal conflicting facts."""
-    document = minimal_result(status="incomplete")
-    configuration = minimal_configuration()
-    definitions = configuration["fields"]["definitions"]
-    if contradiction == "key-source":
-        definitions["record_id"]["source_fields"]["reference"] = "different_id"
-    elif contradiction == "priority":
-        definitions["measured_value"]["review_priority"] = "high"
-    elif contradiction == "scope":
-        configuration["fields"]["in_scope"] = ["record_id"]
-    else:
-        document["findings"][0]["field"] = "undeclared"
-    configuration_bytes = json.dumps(configuration).encode("utf-8")
-    document["comparison_configuration_digest"]["value"] = sha256(
-        configuration_bytes
-    ).hexdigest()
-    results_validator().validate(document)
-    configuration_validator().validate(configuration)
-
-    with pytest.raises(ResultValidationError):
-        validate_result(document, configuration_bytes=configuration_bytes)
-
-
-def test_generated_configuration_can_be_validated_as_saved_evidence(
-    tmp_path: Path,
-) -> None:
-    """Validate saved automatic JSON independently of custom YAML input."""
-    prepared = _prepare(
-        tmp_path,
-        '[{"record_id":"S1","value":1}]',
-        '[{"record_id":"S1","value":2}]',
-    )
-    evidence = _assemble_evidence(prepared)
-    assert evidence.configuration_document()["metadata"]["id"] == (
-        "adviso-compare:automatic-strict-exact"
-    )
-
-    validate_result(
-        evidence.document(), configuration_bytes=evidence.configuration_bytes
-    )
+        _assemble_evidence(prepared)

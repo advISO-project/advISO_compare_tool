@@ -24,12 +24,7 @@ from typing import Any
 
 from adviso_compare.comparators import numeric_difference_and_tolerance
 from adviso_compare.configuration import AUTOMATIC_CONFIGURATION_ID
-from adviso_compare.results import (
-    ComparisonEvidence,
-    ResultValidationError,
-    parse_evidence_json,
-    validate_result,
-)
+from adviso_compare.results import ComparisonEvidence
 
 RESULTS_FILENAME = "comparison-results.json"
 CONFIGURATION_FILENAME = "comparison-configuration.json"
@@ -158,58 +153,6 @@ def render_html_report(
 
 
 # Evidence-package publication
-
-
-def validate_evidence_package(directory: Path) -> None:
-    """Validate saved JSON evidence, including fixed members and byte linkage.
-
-    This checks the invariants available from the package; it cannot reproduce
-    the comparison without its source inputs and comparison context.
-    """
-    directory = Path(directory)
-    try:
-        members = {member.name for member in directory.iterdir()}
-    except OSError as error:
-        raise ResultValidationError("evidence package is unreadable") from error
-    if members != {RESULTS_FILENAME, CONFIGURATION_FILENAME, REPORT_FILENAME}:
-        raise ResultValidationError("evidence package members are invalid")
-    document = parse_evidence_json(_read_regular_member(directory / RESULTS_FILENAME))
-    configuration_bytes = _read_regular_member(directory / CONFIGURATION_FILENAME)
-    _require_regular_member(directory / REPORT_FILENAME)
-    validate_result(document, configuration_bytes=configuration_bytes)
-
-
-def _require_regular_member(path: Path) -> os.stat_result:
-    """Inspect a fixed sibling without accepting a symbolic link."""
-    try:
-        status = path.lstat()
-    except OSError as error:
-        raise ResultValidationError("evidence member is unavailable") from error
-    if not stat.S_ISREG(status.st_mode):
-        raise ResultValidationError("evidence member must be a regular file")
-    return status
-
-
-def _read_regular_member(path: Path) -> bytes:
-    """Read a regular sibling, refusing links and replacement during open."""
-    expected = _require_regular_member(path)
-    flags = os.O_RDONLY
-    for option in ("O_NOFOLLOW", "O_NONBLOCK", "O_BINARY"):
-        flags |= getattr(os, option, 0)
-    try:
-        descriptor = os.open(path, flags)
-        with os.fdopen(descriptor, "rb") as stream:
-            actual = os.fstat(stream.fileno())
-            current = _require_regular_member(path)
-            if not (
-                stat.S_ISREG(actual.st_mode)
-                and os.path.samestat(expected, actual)
-                and os.path.samestat(current, actual)
-            ):
-                raise ResultValidationError("evidence member changed during open")
-            return stream.read()
-    except OSError as error:
-        raise ResultValidationError("evidence member is unreadable") from error
 
 
 def publish_evidence_package(parent: Path, result: ComparisonEvidence) -> Path:

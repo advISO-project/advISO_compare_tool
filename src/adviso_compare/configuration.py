@@ -339,7 +339,7 @@ def resolve_automatic_configuration(document: JsonObject) -> EffectiveConfigurat
 
 
 def validate_saved_configuration(document: JsonObject) -> None:
-    """Validate saved effective configuration from either comparison mode."""
+    """Validate serialized effective configuration from either comparison mode."""
     version = document.get("schema_version")
     if not isinstance(version, str) or version != SUPPORTED_SCHEMA_VERSION:
         raise ConfigurationError(

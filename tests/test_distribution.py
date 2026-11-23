@@ -419,18 +419,3 @@ def test_distributions_and_installed_executable_cover_the_product_path(
         "ERROR [input.unreadable]: reference input could not be read\n"
     )
     assert not failed_output.exists()
-
-    for package in (automatic_package, repeated_package, custom_package):
-        subprocess.run(
-            [
-                str(installed_python),
-                "-c",
-                "from pathlib import Path; "
-                "from adviso_compare.reporting import validate_evidence_package; "
-                f"validate_evidence_package(Path({str(package)!r}))",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-            env=runtime_environment,
-        )

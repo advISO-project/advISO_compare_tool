@@ -263,9 +263,8 @@ may need network access to a package index.
 
 Both installations run outside the checkout, check dependency consistency and
 installed resources, and exercise the same automatic, custom, repeated-run, and
-error scenarios. Evidence is also validated using each installed package. The
-archives and resolved dependency records remain in the pytest base temporary
-directory for the run.
+error scenarios. The archives and resolved dependency records remain in the
+pytest base temporary directory for the run.
 
 ## Sensitive data and repository safety
 

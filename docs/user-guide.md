@@ -33,7 +33,6 @@
 - [7. JSON output reference](#7-json-output-reference)
   - [7.1 `comparison-configuration.json`](#71-comparison-configurationjson)
   - [7.2 `comparison-results.json`](#72-comparison-resultsjson)
-  - [7.3 Structural and semantic validation](#73-structural-and-semantic-validation)
 - [8. Errors and corrective action](#8-errors-and-corrective-action)
 - [9. Security, governance, and limitations](#9-security-governance-and-limitations)
 - [10. Reproducing the examples](#10-reproducing-the-examples)
@@ -1104,14 +1103,20 @@ The evidence package contains two JSON documents with different purposes:
 | `comparison-configuration.json` | The effective configuration: its identity, field definitions, scope, and comparison rules. |
 | `comparison-results.json` | The run's findings, counts, statuses, input provenance, and digest link to the configuration. |
 
-The subsections below describe the fields in each document. Section 7.3
-explains how to validate them together.
+Before publication, `adviso-compare` checks the JSON structures, the
+configuration digest, and agreement with the inputs and comparison outcomes.
+The two formats are independently versioned; the supported combination is
+configuration schema `1.0` with results schema `1.0`.
+
+The subsections below describe the fields in each document. Both schemas are
+included with the installed software.
 
 ### 7.1 `comparison-configuration.json`
 
 This is the complete effective configuration selected or generated for the
 run, saved as JSON. Its schema is
-`comparison-configuration-v1.0.schema.json`, identified by its own root
+[`comparison-configuration-v1.0.schema.json`](https://github.com/advISO-project/advISO_compare_tool/blob/main/src/adviso_compare/schemas/comparison-configuration-v1.0.schema.json),
+identified by its own root
 `schema_version` value `"1.0"`.
 
 The three root properties are `schema_version`, `metadata`, and `fields`.
@@ -1148,7 +1153,8 @@ to its exact saved bytes through `comparison_configuration_digest`.
 ### 7.2 `comparison-results.json`
 
 This document describes the comparison outcome. Its schema is
-`comparison-results-v1.0.schema.json`, identified by its root `schema_version`
+[`comparison-results-v1.0.schema.json`](https://github.com/advISO-project/advISO_compare_tool/blob/main/src/adviso_compare/schemas/comparison-results-v1.0.schema.json),
+identified by its root `schema_version`
 value `"1.0"`. For automation, use structured properties, classifications,
 and finding codes; the English `message` text is intended for human readers.
 
@@ -1368,119 +1374,6 @@ Candidates identical under this ordering key are coalesced. IDs `F000001`,
 `F000002`, and so on are assigned after sorting and coalescence; they are local
 to the result rather than persistent identifiers between different comparisons.
 
-### 7.3 Structural and semantic validation
-
-The supported combination is results schema `1.0` with configuration schema
-`1.0`. These formats are independently versioned.
-
-A JSON schema describes a document's permitted structure and values. The two
-schemas are installed as resources in the `adviso_compare.schemas` Python
-package.
-
-Select a schema using the document family and its root `schema_version`.
-The fixed filenames distinguish the document families; the bare version string
-does not identify a schema globally. Their canonical `$id` values identify
-distinct schemas. Select supported schemas from trusted installed resources,
-without downloading schemas or constructing arbitrary paths from document values.
-
-The software version and the two schema versions have separate lifecycles.
-Supporting a compatible configuration format need not change the results
-schema; features that change results structure or meaning can require a results
-schema revision. Software must support the selected combination, rather than
-assuming that the two version strings must match.
-
-Validation has three layers:
-
-| Layer | What it establishes |
-| --- | --- |
-| Independent structural validation | Each JSON document conforms to its own supported schema, including required properties, permitted values, finding forms, and recognised formats. The results schema neither loads the configuration schema nor constrains its version. |
-| Exact-byte linkage | The required configuration sibling exists and its saved bytes match `comparison_configuration_digest`. |
-| Semantic validation | The configuration rules, result counts, statuses, findings, and configuration-derived facts agree, using source comparison context where available. |
-
-A results-schema check alone is not full package validation. A valid digest
-also does not establish that the configuration or comparison is semantically
-valid. To inspect a saved package, use the Python interpreter from the
-environment where `adviso-compare` is installed:
-
-- For installation with `pip`, activate the environment used in Section 2.1.
-  Its `python` command can import the installed package.
-- For the `pipx` installation in Section 2.2, run `pipx list` and find the
-  directory shown after `venvs are in`. The tool's environment is the
-  `adviso-compare` directory within it. The interpreter paths are:
-
-  | Platform | Python interpreter |
-  | --- | --- |
-  | macOS or Linux | `<venvs directory>/adviso-compare/bin/python` |
-  | Windows | `<venvs directory>\adviso-compare\Scripts\python.exe` |
-
-  Replace `<venvs directory>` with the reported path. When starting an
-  interpreter whose path contains spaces, quote its full path; in PowerShell,
-  precede a quoted executable path with `&`.
-
-Change into the published run directory, start that Python interpreter, and
-paste the following code at its prompt. `Path(".")` selects the current run
-directory:
-
-```python
-from pathlib import Path
-
-from adviso_compare.reporting import validate_evidence_package
-
-validate_evidence_package(Path("."))
-print("Package checks passed for the saved evidence.")
-```
-
-The function returns normally on success and raises `ResultValidationError`
-if the JSON evidence cannot be read or validated, or the package members are
-invalid. It requires exactly the three fixed regular files. Its JSON
-validation procedure is:
-
-1. Parse results as strict UTF-8 JSON, rejecting duplicate object members,
-   non-standard number constants, and non-finite numbers. Select the supported
-   results schema by document family and root `schema_version`, and validate
-   with format assertion enabled.
-2. Require the fixed sibling `comparison-configuration.json` to be a readable
-   regular file, rejecting missing files, symbolic links, and other filesystem
-   objects. Read its exact bytes without following an alternative filename.
-3. Compare SHA-256 of those bytes, including the final newline, with the
-   result's `comparison_configuration_digest` before using the contents.
-4. Parse the configuration with the same strict JSON rules and independently
-   select and validate its schema using its own `schema_version`.
-5. Check that the software supports the two schema versions together, then
-   validate configuration semantics. Saved automatic configurations are valid
-   evidence; the reserved-ID restriction still applies to custom YAML inputs.
-6. Apply result and cross-document semantic checks using the saved
-   configuration and any available comparison context.
-
-Both structural validators use JSON Schema Draft 2020-12 format assertion.
-If you implement these checks independently, enable equivalent format checking
-(for example, `Draft202012Validator(schema, format_checker=FormatChecker())`
-with Python's `jsonschema` package). With format checking enabled, the
-validator rejects invalid recognised UUID, date, and date-time formats. Schemas are loaded from trusted local
-package resources; no network access or schema registry linking the two
-formats is needed.
-
-Semantic checks available from the saved documents include:
-
-- overall status agrees with phase statuses;
-- record equations, value-opportunity counts, and finding totals reconcile;
-- key field-name and identity arrays have the required lengths and order;
-- findings and exclusions have the required order and no duplicates;
-- finding IDs are sequential after sorting; and
-- key declarations, finding field identities, review priorities, and
-  configured-field exclusions agree with the saved configuration.
-
-Before publication, `adviso-compare` additionally has the parsed input datasets
-and comparison-phase results. It checks that the saved configuration agrees
-with the selected effective configuration, input provenance matches the parsed
-inputs, findings and summaries match the phase results, and undeclared-field
-exclusions match observed source fields. Inspection of a saved package alone
-cannot repeat those source-dependent checks or prove that the comparison was
-performed correctly. Independent reproduction requires the original input
-bytes and suitable comparison context. The snippet checks the saved JSON
-pair and package membership; it does not regenerate or authenticate the HTML
-report.
-
 ## 8. Errors and corrective action
 
 The first error line has the form:
@@ -1561,9 +1454,9 @@ No generation script is needed. Their expected stable outcomes are:
 | small custom (Section 5.1) | `complete` | 1 | 0 |
 | custom with transformations (Section 5.2) | `complete` | 3 | 0 |
 
-Run the commands in Sections 3.1.1, 5.1, and 5.2, then open the run directory
-identified by each completion summary and validate the complete package
-as shown in Section 7.3. The same output parents can be reused: each invocation
+Run the commands in Sections 3.1.1, 5.1, and 5.2, then open the report in the run
+directory identified by each completion summary and check the outcomes above.
+The same output parents can be reused: each invocation
 adds a new run directory. Run IDs and completion times change on every run.
 Software and runtime provenance can change between environments. Input digests
 change if the fixture bytes are edited. The comparison outcome above remains

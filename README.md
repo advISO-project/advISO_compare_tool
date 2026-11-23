@@ -39,7 +39,7 @@ is no "overwrite" mode). The completion summary identifies the published run dir
 Configuration and results each use their own root `schema_version` and are independently
 versioned. Version 1 supports results schema `1.0` with configuration schema
 `1.0`. See the user guide's
-[package-validation procedure](docs/user-guide.md#73-structural-and-semantic-validation).
+[JSON output reference](docs/user-guide.md#7-json-output-reference).
 
 The behavioural contract is defined by subject:
 

@@ -75,7 +75,7 @@ All paths below are within `src/adviso_compare/`.
 | [`cli.py`](../src/adviso_compare/cli.py), [`invocation.py`](../src/adviso_compare/invocation.py) | Command parsing, invocation/outcome types, diagnostics, and exit codes. |
 | [`application.py`](../src/adviso_compare/application.py) | Coordinates preparation, comparison phases, assembly, and publication. |
 | [`inputs.py`](../src/adviso_compare/inputs.py) | Reads source bytes, captures provenance, parses CSV/TSV/JSON, and preserves native value categories and locations. |
-| [`configuration.py`](../src/adviso_compare/configuration.py) | Loads restricted YAML, validates configuration, resolves defaults into domain objects, and validates saved configuration JSON. |
+| [`configuration.py`](../src/adviso_compare/configuration.py) | Loads restricted YAML, validates configuration, resolves defaults into domain objects, and validates serialized configuration JSON. |
 | [`processing.py`](../src/adviso_compare/processing.py) | Shared operation definitions and compatibility rules used by configuration validation and translation. |
 | [`records.py`](../src/adviso_compare/records.py) | Generates automatic configuration and builds indexed records with validated canonical keys. |
 | [`translation.py`](../src/adviso_compare/translation.py) | Applies source processing, null handling, mappings, type parsing, collection processing, and typed normalisation. |
@@ -83,7 +83,7 @@ All paths below are within `src/adviso_compare/`.
 | [`alignment.py`](../src/adviso_compare/alignment.py) | Aligns canonical record keys and identifies missing/extra records. |
 | [`comparators.py`](../src/adviso_compare/comparators.py), [`values.py`](../src/adviso_compare/values.py) | Compare translated values and account for aligned value opportunities. |
 | [`results.py`](../src/adviso_compare/results.py) | Constructs findings and summaries, orders and serializes JSON, validates evidence semantics, and owns `ComparisonEvidence`. |
-| [`reporting.py`](../src/adviso_compare/reporting.py) | Renders HTML, publishes evidence safely, and inspects saved packages. |
+| [`reporting.py`](../src/adviso_compare/reporting.py) | Renders HTML and publishes evidence safely. |
 | [`schemas/__init__.py`](../src/adviso_compare/schemas/__init__.py) | Loads explicitly supported schema resources from the installed package. |
 
 These are ordinary modules with explicit function calls. Translation is shared
@@ -93,8 +93,8 @@ to `PreparedComparison` through a type-checking import, avoiding a runtime
 import cycle with the application coordinator.
 
 Some responsibilities share a module: JSON assembly and semantic validation
-are both in `results.py`; HTML, publication, and package inspection are all in
-`reporting.py`. Their functions provide separate entry points for focused tests.
+are both in `results.py`; HTML and publication are both in `reporting.py`.
+Their functions provide separate entry points for focused tests.
 
 ## Data representations
 
@@ -141,24 +141,19 @@ cross-file invariant.
 | Configuration loading | Restricted YAML syntax, supported schema version, packaged configuration schema, and semantic rules such as field references and operation compatibility. |
 | Input parsing and key preparation | Source format, encoding, native values, record shape, and usable unique canonical keys. |
 | Contract assessment and value comparison | Per-field validity and comparability; attributable failures become assessment issues rather than generic parser errors. |
-| `results.validate_result` | Results schema, exact configuration digest, saved configuration validity, supported schema combination, and cross-document semantics. Comparison context, when supplied, enables additional checks against inputs and phase outcomes. |
-| `reporting.validate_evidence_package` | Fixed package membership, regular files, strict JSON parsing, and the validations available from the saved JSON pair. |
+| `results.validate_result` | Results schema, exact configuration digest, serialized configuration validity, supported schema combination, cross-document semantics, and agreement with the original inputs and phase outcomes. Complete comparison context is required. |
 
 The dataset JSON decoder preserves native categories and numeric lexical
 information for comparison. The separate `results.parse_evidence_json` decoder
-reads evidence documents as JSON objects and rejects duplicate members,
-non-finite numbers, and invalid encoding. Use the decoder appropriate to the
-boundary rather than substituting a permissive `json.loads` call.
+reads generated evidence bytes as JSON objects for validation and returns fresh
+document views. It rejects duplicate members, non-finite numbers, and invalid
+encoding.
 
 Both JSON documents declare their own `schema_version`. Schema resources are
 selected locally by family and version; validation does not fetch schema IDs
 from the network. The results schema does not embed the configuration schema.
 `results.SUPPORTED_SCHEMA_COMBINATIONS` explicitly declares supported pairs,
 and semantic validation checks their relationship.
-
-Saved-package validation cannot reproduce the comparison without source
-inputs. It also does not authenticate HTML content: the report is checked as a
-required regular member, while the JSON pair supplies the validated evidence.
 
 ## Evidence assembly and publication
 
@@ -261,7 +256,7 @@ locates responsibilities; it does not authorize a behavioural or schema change.
 | Record matching | `alignment.py`; [alignment tests](../tests/test_alignment.py). |
 | Equality, tolerance, collections, or opportunity counts | `comparators.py`, `values.py`; [value tests](../tests/test_values.py). |
 | Finding content, JSON layout, or evidence linkage | `results.py`, relevant schemas; [results](../tests/test_results.py) and schema tests. |
-| HTML presentation, saved-package inspection, or publication | Separate functions in `reporting.py`; [reporting tests](../tests/test_reporting.py). |
+| HTML presentation or publication | Separate functions in `reporting.py`; [reporting tests](../tests/test_reporting.py). |
 | Command behaviour or boundary errors | `cli.py`, `invocation.py`, `application.py`; [CLI tests](../tests/test_cli.py). |
 | Installed resources or packaging | `pyproject.toml`; distribution tests. |
 | Published examples and user instructions | `docs/user-guide.md`, `docs/examples/`; [documentation tests](../tests/test_documentation.py) and distribution tests. |

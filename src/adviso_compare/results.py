@@ -128,7 +128,7 @@ class RuntimeIdentity:
 
 @dataclass(slots=True)
 class ResultValidationError(ValueError):
-    """Generated or saved evidence violates a package-validation rule."""
+    """Generated evidence violates a validation rule."""
 
     message: str
 
@@ -255,17 +255,13 @@ def serialize_result(document: Mapping[str, object]) -> bytes:
 def validate_result(
     document: JsonObject,
     *,
-    configuration_bytes: bytes | None = None,
-    prepared: PreparedComparison | None = None,
-    contract: ContractResult | None = None,
-    records: RecordsResult | None = None,
-    values: ValuesResult | None = None,
+    configuration_bytes: bytes,
+    prepared: PreparedComparison,
+    contract: ContractResult,
+    records: RecordsResult,
+    values: ValuesResult,
 ) -> None:
-    """Validate results, configuration byte linkage, and shared semantics.
-
-    Source-dependent checks additionally use comparison context when provided.
-    Structural validation alone is available through the packaged schemas.
-    """
+    """Validate generated evidence against its complete comparison context."""
     version = document.get("schema_version")
     if not isinstance(version, str):
         raise ResultValidationError("results schema version is required")
@@ -275,8 +271,6 @@ def validate_result(
         raise ResultValidationError(
             "canonical result failed schema validation"
         ) from error
-    if configuration_bytes is None:
-        raise ResultValidationError("saved configuration bytes are required")
     _require(
         sha256(configuration_bytes).hexdigest()
         == document["comparison_configuration_digest"]["value"],
@@ -977,10 +971,10 @@ def _location_sort_key(location: object) -> tuple[object, ...]:
 def _validate_semantics(
     document: JsonObject,
     configuration: JsonObject,
-    prepared: PreparedComparison | None,
-    contract: ContractResult | None,
-    domain_records: RecordsResult | None,
-    domain_values: ValuesResult | None,
+    prepared: PreparedComparison,
+    contract: ContractResult,
+    domain_records: RecordsResult,
+    domain_values: ValuesResult,
 ) -> None:
     """Verify invariants that JSON Schema cannot express."""
     phases = document["phases"]
@@ -1021,53 +1015,42 @@ def _validate_semantics(
         phases["values"] == expected_values_status,
         "values phase status disagrees with not-assessable opportunities",
     )
-    if domain_records is not None:
-        _require(
-            records
-            == {
-                "reference": domain_records.counts.reference,
-                "query": domain_records.counts.query,
-                "matched": domain_records.counts.matched,
-                "missing": domain_records.counts.missing,
-                "extra": domain_records.counts.extra,
-            },
-            "record summary disagrees with the records phase",
-        )
-    if domain_values is not None:
-        _require(
-            document["summary"]["values"]
-            == {
-                "matched": domain_values.counts.matched,
-                "mismatched": domain_values.counts.mismatched,
-                "not_assessable": domain_values.counts.not_assessable,
-            },
-            "value summary disagrees with the values phase",
-        )
-    if (
-        contract is not None
-        and domain_records is not None
-        and domain_values is not None
-    ):
-        expected_phases = {
-            "contract": "complete",
-            "records": "complete",
-            "values": domain_values.status.value,
-        }
-        _require(phases == expected_phases, "phase status disagrees with phase results")
-        if prepared is None:
-            raise ResultValidationError(
-                "phase-result validation requires prepared comparison context"
-            )
-        expected_findings = _assemble_findings(
-            prepared.configuration,
-            contract,
-            domain_records,
-            domain_values,
-        )
-        _require(
-            document["findings"] == expected_findings,
-            "findings disagree with the comparison phase results",
-        )
+    _require(
+        records
+        == {
+            "reference": domain_records.counts.reference,
+            "query": domain_records.counts.query,
+            "matched": domain_records.counts.matched,
+            "missing": domain_records.counts.missing,
+            "extra": domain_records.counts.extra,
+        },
+        "record summary disagrees with the records phase",
+    )
+    _require(
+        document["summary"]["values"]
+        == {
+            "matched": domain_values.counts.matched,
+            "mismatched": domain_values.counts.mismatched,
+            "not_assessable": domain_values.counts.not_assessable,
+        },
+        "value summary disagrees with the values phase",
+    )
+    expected_phases = {
+        "contract": "complete",
+        "records": "complete",
+        "values": domain_values.status.value,
+    }
+    _require(phases == expected_phases, "phase status disagrees with phase results")
+    expected_findings = _assemble_findings(
+        prepared.configuration,
+        contract,
+        domain_records,
+        domain_values,
+    )
+    _require(
+        document["findings"] == expected_findings,
+        "findings disagree with the comparison phase results",
+    )
 
     findings = document["findings"]
     summary = document["summary"]["findings"]
@@ -1143,22 +1126,21 @@ def _validate_semantics(
 def _validate_configuration_derivations(
     document: JsonObject,
     configuration: JsonObject,
-    prepared: PreparedComparison | None,
+    prepared: PreparedComparison,
 ) -> None:
-    """Cross-check configuration-derived evidence and available source context."""
-    if prepared is not None:
-        _require(
-            configuration == prepared.configuration.document,
-            "saved configuration disagrees with the effective configuration",
-        )
-        _require(
-            document["inputs"]
-            == {
-                "reference": _input_document(prepared.reference),
-                "query": _input_document(prepared.query),
-            },
-            "input provenance disagrees with the parsed inputs",
-        )
+    """Cross-check configuration-derived evidence and original source context."""
+    _require(
+        configuration == prepared.configuration.document,
+        "saved configuration disagrees with the effective configuration",
+    )
+    _require(
+        document["inputs"]
+        == {
+            "reference": _input_document(prepared.reference),
+            "query": _input_document(prepared.query),
+        },
+        "input provenance disagrees with the parsed inputs",
+    )
     fields = configuration["fields"]
     definitions = fields["definitions"]
     record_key = fields["record_key"]
@@ -1197,8 +1179,6 @@ def _validate_configuration_derivations(
         actual_configured == expected_configured,
         "configured-field exclusions disagree with the saved configuration",
     )
-    if prepared is None:
-        return
     expected_undeclared = _expected_undeclared_exclusions(
         prepared,
         definitions,

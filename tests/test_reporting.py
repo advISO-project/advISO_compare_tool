@@ -35,17 +35,15 @@ from adviso_compare.reporting import (
 )
 from adviso_compare.results import (
     ComparisonEvidence,
-    ResultValidationError,
     RuntimeIdentity,
     assemble_result,
 )
 from adviso_compare.values import compare_values
 from tests.support.documents import (
     minimal_configuration,
-    minimal_configuration_bytes,
     minimal_result,
 )
-from tests.support.schemas import configuration_validator, results_validator
+from tests.support.schemas import configuration_validator
 
 _DEFAULT_RUN_ID = UUID("123e4567-e89b-42d3-a456-426614174000")
 
@@ -642,7 +640,6 @@ def test_publication_creates_exact_private_three_file_package(
         assert stat.S_IMODE(selected.stat().st_mode) == 0o700
         for member in selected.iterdir():
             assert stat.S_IMODE(member.stat().st_mode) == 0o600
-    reporting.validate_evidence_package(selected)
     assert not list(tmp_path.glob(f".{parent.name}.*"))
 
 
@@ -987,65 +984,3 @@ def test_concurrent_runs_publish_independently_under_the_same_parent(
         digest = result.document()["comparison_configuration_digest"]
         assert digest["value"] == (sha256(result.configuration_bytes).hexdigest())
     assert not list(tmp_path.glob(".evidence.*"))
-
-
-@pytest.mark.parametrize(
-    "defect",
-    ["missing", "unreadable", "symlink", "directory", "wrong-name", "digest-mismatch"],
-)
-def test_package_inspection_rejects_invalid_configuration_files(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    defect: str,
-) -> None:
-    """Require the fixed regular sibling and its exact byte linkage."""
-    package = tmp_path / "package"
-    package.mkdir()
-    configuration_path = package / "comparison-configuration.json"
-    configuration_bytes = minimal_configuration_bytes()
-    configuration_path.write_bytes(configuration_bytes)
-    result_path = package / "comparison-results.json"
-    result_path.write_text(json.dumps(minimal_result()), encoding="utf-8")
-    (package / "comparison-report.html").write_text(
-        "<!doctype html><html><body>Synthetic report</body></html>",
-        encoding="utf-8",
-    )
-    results_validator().validate(json.loads(result_path.read_bytes()))
-    configuration_validator().validate(json.loads(configuration_bytes))
-    if defect in {"missing", "symlink", "directory"}:
-        configuration_path.unlink()
-    if defect == "symlink":
-        target = tmp_path / "configuration-target.json"
-        target.write_bytes(configuration_bytes)
-        configuration_path.symlink_to(target)
-    elif defect == "directory":
-        configuration_path.mkdir()
-    elif defect == "wrong-name":
-        configuration_path.rename(package / "different-configuration.json")
-    elif defect == "digest-mismatch":
-        configuration_path.write_bytes(configuration_bytes + b" ")
-    original_paths = set(package.iterdir())
-    original_results = result_path.read_bytes()
-    read_attempted = False
-    if defect == "unreadable":
-        real_open = os.open
-
-        def deny_read(path: Path, flags: int, *args: object) -> int:
-            nonlocal read_attempted
-            if path == configuration_path:
-                read_attempted = True
-                raise PermissionError("injected read failure")
-            return real_open(path, flags, *args)
-
-        monkeypatch.setattr(os, "open", deny_read)
-
-    with pytest.raises(ResultValidationError):
-        reporting.validate_evidence_package(package)
-
-    if defect == "unreadable":
-        assert read_attempted
-    assert set(package.iterdir()) == original_paths
-    assert result_path.read_bytes() == original_results
-    if defect == "symlink":
-        assert configuration_path.is_symlink()
-        assert target.read_bytes() == configuration_bytes
