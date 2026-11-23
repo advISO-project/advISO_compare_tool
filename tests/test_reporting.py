@@ -802,10 +802,10 @@ def test_failed_initial_write_publishes_nothing_and_cleans_staging(
     monkeypatch: pytest.MonkeyPatch,
     failure_member: str,
 ) -> None:
-    """A staging fault leaves at most an empty parent without evidence."""
+    """A partial staged member is cleaned up without publishing any evidence."""
     evidence = _generated_evidence(tmp_path / "inputs")
     parent = tmp_path / "evidence"
-    real_write = reporting._write_atomic_member
+    real_write = reporting._write_staged_member
     failure_attempted = False
 
     def fail_selected_member(path: Path, content: bytes) -> None:
@@ -814,10 +814,11 @@ def test_failed_initial_write_publishes_nothing_and_cleans_staging(
             assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
         if path.name == failure_member:
             failure_attempted = True
+            real_write(path, b"partial member")
             raise OSError("injected write fault")
         real_write(path, content)
 
-    monkeypatch.setattr(reporting, "_write_atomic_member", fail_selected_member)
+    monkeypatch.setattr(reporting, "_write_staged_member", fail_selected_member)
 
     with pytest.raises(OutputError) as raised:
         _publish(parent, evidence)

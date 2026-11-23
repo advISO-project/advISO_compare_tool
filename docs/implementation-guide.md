@@ -179,6 +179,8 @@ interpretation of the comparison rule.
 `reporting.publish_evidence_package` renders HTML before preparing output,
 writes all three members into a private staging directory inside the output
 parent, and publishes the completed directory through an exclusive rename.
+Members are written directly under their staged filenames using exclusive
+creation, private permissions, and file synchronization before publication.
 The final name comes from the run timestamp and identifier. Publication refuses
 an existing destination and cleans up its own staging area on failure.
 

@@ -21,7 +21,6 @@ from decimal import Decimal
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
-from uuid import uuid4
 
 from adviso_compare.comparators import numeric_difference_and_tolerance
 from adviso_compare.configuration import AUTOMATIC_CONFIGURATION_ID
@@ -232,9 +231,9 @@ def publish_evidence_package(parent: Path, result: ComparisonEvidence) -> Path:
         os.chmod(staging_root, 0o700)
         stage = staging_root / "package"
         stage.mkdir(mode=0o700)
-        _write_atomic_member(stage / RESULTS_FILENAME, json_content)
-        _write_atomic_member(stage / CONFIGURATION_FILENAME, result.configuration_bytes)
-        _write_atomic_member(stage / REPORT_FILENAME, html_content)
+        _write_staged_member(stage / RESULTS_FILENAME, json_content)
+        _write_staged_member(stage / CONFIGURATION_FILENAME, result.configuration_bytes)
+        _write_staged_member(stage / REPORT_FILENAME, html_content)
         _fsync_directory(stage)
         _publish_new_package(stage, destination)
         _fsync_directory(parent)
@@ -357,13 +356,12 @@ def _require_absent(destination: Path) -> None:
     )
 
 
-def _write_atomic_member(path: Path, content: bytes) -> None:
-    """Write one private member and atomically give it its final staged name."""
-    temporary = path.with_name(f".{path.name}.temporary-{uuid4().hex}")
+def _write_staged_member(path: Path, content: bytes) -> None:
+    """Exclusively create and synchronize one member in private staging."""
     descriptor: int | None = None
     try:
         descriptor = os.open(
-            temporary,
+            path,
             os.O_WRONLY | os.O_CREAT | os.O_EXCL,
             0o600,
         )
@@ -372,15 +370,10 @@ def _write_atomic_member(path: Path, content: bytes) -> None:
             stream.write(content)
             stream.flush()
             os.fsync(stream.fileno())
-        os.chmod(temporary, 0o600)
-        os.replace(temporary, path)
+        os.chmod(path, 0o600)
     finally:
         if descriptor is not None:
             os.close(descriptor)
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
 
 
 def _remove_temporary_directory(path: Path) -> None:
