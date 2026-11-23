@@ -108,54 +108,54 @@ An execution error prevents a trustworthy result and produces no new package.
 
 `adviso-compare` requires Python 3.10 or later. It is fully supported on Linux
 with CPython 3.10, 3.11, 3.12, 3.13, 3.14, and 3.15. Windows and macOS are expected
-to work, with full CI coverage on CPython 3.10 only. Use the latest available patch
-release of your selected Python version.
+to work, with full CI coverage on CPython 3.10 only. You should use the latest
+available patch release of your selected Python version.
 
-Download the `.whl` file for your chosen release from
+You can download the `.whl` file for your chosen release from
 [GitHub Releases](https://github.com/advISO-project/advISO_compare_tool/releases),
-or use a wheel supplied by your laboratory. In the commands below, replace
-`/path/to/adviso_compare-VERSION-py3-none-any.whl` with the actual path and
-versioned filename on your system. Keep paths containing spaces in quotes.
+or use a wheel supplied by your laboratory. In the commands below, you should
+replace `/path/to/adviso_compare-VERSION-py3-none-any.whl` with the actual path
+and versioned filename on your system. Paths containing spaces need quotes.
 
 You can install into an existing virtual environment with `pip`, create a new
 one, or use `pipx` to manage a dedicated environment for the tool. Installing
 the wheel with `pip` does not install or upgrade Python itself. If you have no
-supported Python installation, obtain one from [python.org](https://www.python.org/downloads/)
-or your system administrator before continuing.
+supported Python installation, you can obtain one from
+[python.org](https://www.python.org/downloads/) or your system administrator.
 
-Run the commands in a terminal. Long commands elsewhere in this guide use a
-trailing `\` to continue onto the next line in bash or zsh. In Windows Command
-Prompt or PowerShell, remove those continuation backslashes and join the lines
-with spaces. Section 3.1 includes a single-line equivalent of the first
-comparison command.
+The commands are intended for a terminal. Long commands elsewhere in this guide
+use a trailing `\` to continue onto the next line in bash or zsh. In Windows
+Command Prompt or PowerShell, the equivalent command is a single line, with
+spaces in place of the continuation backslashes and line breaks. Section 3.1
+includes a single-line equivalent of the first comparison command.
 
 ### 2.1 Install with pip
 
-If you already have a virtual environment, activate it and continue to the
-version check below. To create a new environment, first select an installed
-Python version supported by the tool. These examples select Python 3.12;
-substitute another supported installed version if needed.
+If you already have a virtual environment, you can activate it and continue to
+the version check below. For a new environment, you should first choose an
+installed Python version supported by the tool. These examples select Python
+3.12; you can substitute another supported installed version if needed.
 
-On macOS or Linux, create and activate the environment with:
+On macOS or Linux, you can create and activate the environment with:
 
 ```console
 python3.12 -m venv .venv
 . .venv/bin/activate
 ```
 
-On Windows, use the Python launcher to create it:
+On Windows, the Python launcher can create the environment:
 
 ```console
 py -3.12 -m venv .venv
 ```
 
-Then activate it with `.venv\Scripts\activate` in Command Prompt, or
+You can then activate it with `.venv\Scripts\activate` in Command Prompt, or
 `.venv\Scripts\Activate.ps1` in PowerShell. If you do not use the Python
-launcher, replace `py -3.12` with the path to your chosen Python executable.
-In PowerShell, precede a quoted executable path with `&`.
+launcher, you can replace `py -3.12` with the path to your chosen Python
+executable. PowerShell needs `&` before a quoted executable path.
 
-With the environment active, check that `python` refers to Python 3.10 or later,
-then install the wheel and its dependencies:
+With the environment active, `python --version` should report Python 3.10 or
+later. You can then install the wheel and its dependencies:
 
 ```console
 python --version
@@ -164,9 +164,9 @@ python -m pip install "/path/to/adviso_compare-VERSION-py3-none-any.whl"
 
 ### 2.2 Install with pipx
 
-If you use [pipx](https://pipx.pypa.io/stable/), select the Python interpreter
-for the tool's environment with `--python`. Choose an installed version
-supported by both `adviso-compare` and your version of `pipx`; `pipx` may require
+If you use [pipx](https://pipx.pypa.io/stable/), you can select the Python
+interpreter for the tool's environment with `--python`. The installed version
+needs to be supported by both `adviso-compare` and `pipx`; `pipx` may require
 a newer Python than the tool's 3.10 minimum. This example selects Python 3.12:
 
 ```console
@@ -182,7 +182,7 @@ that environment to run the command.
 
 Installation may use a package index to obtain dependencies. Once installed,
 the comparison itself needs no network service. After either installation,
-check that the command is available:
+you can check that the command is available with:
 
 ```console
 adviso-compare --version
@@ -197,22 +197,21 @@ shows where it keeps application environments.
 ## 3. Quick start
 
 The installed examples provide a first comparison without creating a
-configuration yourself. Run the automatic example, then use its report to
-explore the results. Section 5 shows how to supply your own configuration.
+configuration yourself. You can start with the automatic example and explore
+its report. Section 5 shows how to supply your own configuration.
 
 ### 3.1 Run your first comparison
 
 **Automatic strict-exact mode** is suitable when both datasets already use the
 same field names and representations. It generates the comparison configuration
-for you. To try it, omit `--configuration`.
+for you when `--configuration` is omitted.
 
-Copy the `examples` directory installed next to this guide into a writable
-working directory outside the Python environment. Keep its `automatic` and
-`custom` subdirectories together, then change into the copied `examples`
-directory. The commands below create evidence beside your copies of the inputs,
-leaving the installed files unchanged.
+To try the examples, you can copy the `examples` directory installed next to
+this guide to a writable location outside the Python environment. The copy
+should include both its `automatic` and `custom` subdirectories. The commands
+below create evidence beside your copies of the inputs.
 
-From that copied directory, run:
+From the copied `examples` directory, you can run:
 
 ```console
 adviso-compare \
@@ -241,22 +240,22 @@ Assessment issues: 0
 Evidence package: automatic-evidence/20261111T143205Z-123e4567-e89b-42d3-a456-426614174000
 ```
 
-Run the same command again with `--output automatic-evidence` to add another
-run directory while preserving the first. Section 6 shows the resulting layout.
+Repeating the command with `--output automatic-evidence` adds another run
+directory while preserving the first. Section 6 shows the resulting layout.
 
-Automatic mode is deliberately conservative. Use a custom configuration when
-source field names differ, values require translation, a composite key is
+Automatic mode is deliberately conservative. A custom configuration is useful
+when source field names differ, values require translation, a composite key is
 needed, or automatic key selection is ambiguous. [Section 4.3](#43-automatic-mode)
 gives the full selection rules.
 
 ### 3.2 Read and interpret the results
 
-Open `comparison-report.html` in the directory named by the completion
+You can open `comparison-report.html` in the directory named by the completion
 summary. Beside it are `comparison-results.json`, for software use and detailed
 review, and `comparison-configuration.json`, the effective configuration.
 
-Begin with run completeness, then review comparison differences, assessment
-issues, and exclusions. The automatic example reports a complete run with one
+A useful review order is run completeness, comparison differences, assessment
+issues, then exclusions. The automatic example reports a complete run with one
 comparison difference and no assessment issues. Its query-only
 `pipeline_version` field was excluded, so it did not create a finding.
 
@@ -283,8 +282,8 @@ the general nature of the finding; the code explains exactly what happened.
 
 Every comparison performs three phases in order:
 
-1. **Contract:** checks that configured fields can be found and translated as
-   declared, including requiredness, null, type, validity, and mapping rules.
+1. **Contract:** checks that configured fields are present when required and
+   can be translated under the declared null, type, validity, and mapping rules.
 2. **Records:** pairs records using their keys and identifies
    missing and extra records.
 3. **Values:** compares each assessable, in-scope, non-key field in aligned
@@ -388,13 +387,6 @@ about configured fields for human review. It does not change the comparison,
 the finding classification, run status, or exit code, and it is not a statement
 of clinical significance. Record findings do not carry a review priority; they
 are counted as `unassigned` in the priority summary.
-
-#### 3.2.7 No acceptance verdict
-
-The tool reports what it compared, what differed, and what it could not assess.
-It does not decide whether the results are acceptable, whether a pipeline has
-passed validation, or whether an ISO 15189 requirement has been met. Those
-decisions belong to the laboratory's separately governed validation process.
 
 ## 4. Command and input reference
 
@@ -552,7 +544,7 @@ its format is easy to recognise.
 
 This example pairs samples whose identifier fields have different names and
 compares their measurements as decimals. In a working directory of your
-choice, save the following as `reference.csv`:
+choice, you can save the following as `reference.csv`:
 
 ```csv
 record_id,measurement
@@ -560,7 +552,7 @@ S1,1.00
 S2,2.00
 ```
 
-Save the query as `query.csv` in the same directory:
+The corresponding query can be saved as `query.csv` in the same directory:
 
 ```csv
 sample_id,result
@@ -568,7 +560,7 @@ S1,1
 S2,2.10
 ```
 
-Save this complete configuration as `configuration.yaml`:
+This complete configuration can be saved as `configuration.yaml`:
 
 ```yaml
 schema_version: "1.0"
@@ -599,12 +591,11 @@ configuration a stable ID and revision; it does not change comparison rules.
 
 The canonical field `sample` associates the two identifier names and provides
 the record key. `measurement` associates the values to compare. Both fields
-are required on both sides, and neither permits null: an explicit missing
-value. An absent field is different from a present field containing null.
+are required on both sides, and neither permits null.
 `typed_exact` compares the interpreted key strings; `numeric_exact` compares
 exact decimal values. No tolerance or rounding is applied.
 
-From that directory, run:
+From that directory, you can run:
 
 ```console
 adviso-compare \
@@ -621,10 +612,10 @@ sample; it is not counted again as a measurement comparison.
 
 ### 5.2 Runnable custom example with transformations
 
-For a richer example, use the writable copy of the `examples` directory from
-Section 3.1. If you are starting here, copy the installed `examples` directory
-to a working directory outside the Python environment first, then change into
-that copy and run:
+For a richer example, you can use the writable copy of the `examples` directory
+from Section 3.1. If you are starting here, you can first copy the installed
+`examples` directory to a working directory outside the Python environment.
+From the copied `examples` directory, the command is:
 
 ```console
 adviso-compare \
@@ -663,10 +654,10 @@ The configuration is one UTF-8 YAML mapping, using YAML 1.2 scalar resolution.
 The file is checked before either dataset is read. YAML aliases, anchors,
 merge keys, explicit tags, duplicate keys, and unsafe
 object constructors are rejected, as are unknown properties. Quoting textual
-values helps prevent YAML from interpreting them as numbers, dates, or
-booleans. In particular, `schema_version` is a quoted string, and decimal
-parameters use strings such as `"0.1"`. The examples use quotes to make
-intended string values clear.
+values helps prevent YAML from interpreting them as numbers or booleans. In
+particular, `schema_version` is a quoted string, and decimal parameters use
+strings such as `"0.1"`. The examples use quotes to make intended string values
+clear.
 
 A JSON schema describes a document's permitted structure and values.
 `comparison-configuration-v1.0.schema.json` defines the expected configuration
@@ -719,14 +710,14 @@ key, and has the following properties:
 | --- | --- | --- |
 | `source_fields` | Yes | `reference` and `query` give the source field name on each side. Both are required non-empty strings. |
 | `required` | Yes | `reference` and `query` booleans say whether every applicable record on that side must contain the field. |
-| `logical_type` | Usually | Scalar type or collection declaration. Omit only for `preserved_exact`. |
+| `logical_type` | Usually | Scalar type or collection declaration. Omitted for `preserved_exact`; otherwise required. |
 | `null_policy` | Yes | Defines whether null is allowed and how two nulls compare. |
 | `source_normalisation` | No | Side-specific ordered text operations before mapping and type parsing. |
 | `collection_representation` | Collections only, optional | Describes how either side writes a collection. |
 | `value_mapping` | Scalar typed fields only, optional | Side-specific closed translation tables. |
 | `typed_normalisation` | Scalar typed fields only, optional | Ordered operations applied to parsed values on both sides. |
 | `comparator` | Yes | Comparison rule and, where needed, its parameters. |
-| `review_priority` | No | `low`, `normal`, or `high`; defaults to `normal`. It helps organise review and does not change findings, status, exit code, or clinical significance. |
+| `review_priority` | No | `low`, `normal`, or `high`; defaults to `normal`. It labels findings and groups their priority counts without affecting which differences or assessment issues are detected, run status, or exit code. It does not indicate clinical significance. |
 
 For each record-key field, the tool requires an entry in `definitions` and
 `in_scope`, a scalar logical type, and `typed_exact` comparison. The field is
@@ -751,8 +742,8 @@ The tool accepts these source values for each declared type:
 | `date` | String containing a valid Gregorian `YYYY-MM-DD` date. |
 | `datetime` | String containing a full RFC 3339 date and time with `Z` or a numeric offset. A local time without an offset is not accepted. |
 
-Integer text accepts leading zeros, which have no numerical significance; use
-strings for identifiers whose leading zeros matter. Decimal text follows
+Integer text accepts leading zeros, which have no numerical significance.
+The `string` type preserves leading zeros in identifiers. Decimal text follows
 `[+-]?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?`, using ASCII digits.
 Parsing retains all supplied numerical precision, without binary floating-point
 conversion or implicit rounding. Booleans are distinct from integers.
@@ -766,8 +757,8 @@ with uppercase `T` and `Z` and removes only redundant fractional zeros.
 
 JSON objects cannot be converted to any of the logical types. They may be compared
 as complete, untyped JSON values using `preserved_exact`. More generally, the tool
-uses the declared logical type for parsing. Use `value_mapping` to describe
-translations that type parsing does not provide.
+uses the declared logical type for parsing. Translations beyond those parsing
+rules can be described with `value_mapping`.
 
 A collection uses an object:
 
@@ -796,7 +787,8 @@ A null element is reported as `invalid_field_value`.
 
 `null_policy.allowed` and `null_policy.nulls_equal` are required booleans. If
 null is not allowed, `nulls_equal` must be false. JSON null is always recognised
-as null. A missing field is different from a present field containing null.
+as null. [Section 1.1](#11-records-fields-and-comparison-rules) describes how null
+differs from an absent field or empty text.
 
 Empty strings, whitespace-only strings, null, absent fields, and configured
 missing tokens remain distinct unless an explicit field policy transforms them.
@@ -833,8 +825,8 @@ integers, and decimals use a textual `value`; booleans use `true` or `false`. An
 actual JSON `null` does not need to be listed because the tool recognises it
 automatically.
 
-Descriptors match by parser-native category and value after source
-normalisation, rather than by numerical spelling. Decimal descriptors `"1.0"`
+Value descriptions match by parser-native category and value after source
+normalisation, rather than by numerical spelling. Decimal descriptions `"1.0"`
 and `"1.00"` describe the same decimal value, distinct from integer `"1"`.
 The same matching rule applies to mapping sources.
 
@@ -863,10 +855,10 @@ only `trim` needs `parameters` in this example.
 | --- | --- | --- |
 | `unicode_normalise` | `form`: `NFC`, `NFD`, `NFKC`, or `NFKD` | Applies the named Unicode normalisation form. |
 | `trim` | `side`: `leading`, `trailing`, or `both` | Removes Unicode White_Space characters from the chosen end or ends. |
-| `case_fold` | None; omit `parameters` | Applies locale-independent full Unicode case folding. |
+| `case_fold` | No `parameters` property | Applies locale-independent full Unicode case folding. |
 
 Operations run in list order. Case folding does not silently perform Unicode
-normalisation; list both operations when both are needed.
+normalisation; both operations can be listed when both are needed.
 Unicode operations use the Unicode-data version recorded in `runtime.unicode_version`.
 
 ### 5.9 Value mapping
@@ -1013,7 +1005,8 @@ comparator:
 ```
 
 With `absolute_tolerance`, values match when their absolute difference is no
-greater than the tolerance. Use `relative_tolerance` in its place to match when:
+greater than the tolerance. With `relative_tolerance` in its place, values match
+when:
 
 ```text
 absolute difference <= relative tolerance × absolute reference value
@@ -1021,7 +1014,7 @@ absolute difference <= relative tolerance × absolute reference value
 
 The tolerance is a quoted, non-negative finite decimal. The boundary is
 included. A relative tolerance around a zero reference allows only exact zero;
-use an absolute tolerance when a non-zero difference around zero is intended.
+an absolute tolerance can allow a non-zero difference around zero.
 
 The schema restricts the possible shape of comparators. The tool's further
 checks ensure that a comparator suits the declared logical type and collection
@@ -1029,7 +1022,7 @@ kind.
 
 ### 5.13 Processing order
 
-For a scalar field, processing follows this order:
+For a field with a scalar `logical_type`, processing follows this order:
 
 1. distinguish absence from a present parser-native value;
 2. apply side-specific source normalisation to strings;
@@ -1040,6 +1033,9 @@ For a scalar field, processing follows this order:
 6. otherwise parse the declared logical type;
 7. apply typed normalisation where applicable; and
 8. compare the canonical values under the configured null and comparison rules.
+
+Fields using `preserved_exact` compare parser-native values directly, subject
+to their presence and null rules, without normalisation, mapping, or type parsing.
 
 For a collection, whole-field missing-token and null handling happens before
 the representation is decoded. Element normalisation, mapping, and typed
@@ -1129,8 +1125,9 @@ normalisation or case folding can produce different comparison outcomes for
 some characters. The Unicode-data version is recorded in
 `runtime.unicode_version`.
 
-Keep the three files together. The results link to the saved configuration by
-its exact-byte SHA-256 digest, as explained in Section 7.2.2.
+The three files form one evidence package and should be kept together. The
+results link to the saved configuration by its exact-byte SHA-256 digest, as
+explained in Section 7.2.2.
 `comparison-report.html` is a self-contained, offline view made solely from the
 validated results and saved configuration, with verified linkage. It adds fixed
 explanatory text and external review space, but no comparison facts. Rendering
@@ -1139,9 +1136,6 @@ works offline, and does not require scripting.
 Required styling is embedded; the report loads no external scripts, fonts,
 images, or other network resources. Its content remains available with scripting
 disabled.
-
-The report separates run completeness, comparison differences, and assessment
-issues. It does not apply acceptance thresholds or give a pass/fail verdict.
 
 ## 7. JSON output reference
 
@@ -1180,7 +1174,7 @@ All are required. Their fields are:
 | `metadata.description` | Optional human-readable description. |
 | `fields.record_key` | Ordered canonical field names identifying records. |
 | `fields.in_scope` | Canonical fields selected for assessment, including the key fields. |
-| `fields.definitions` | Definitions indexed by canonical field name. Each definition associates source names and supplies the field's requiredness, null policy, comparison rule, and any declared type or transformations. |
+| `fields.definitions` | Field definitions indexed by canonical field name. |
 
 Sections 5.4–5.13 describe the permitted configuration properties, values,
 constraints, and interactions; the [field-definition reference](#55-field-definitions)
@@ -1204,8 +1198,9 @@ to its exact saved bytes through `comparison_configuration_digest`.
 This document describes the comparison outcome. Its schema is
 [`comparison-results-v1.0.schema.json`](https://github.com/advISO-project/advISO_compare_tool/blob/main/src/adviso_compare/schemas/comparison-results-v1.0.schema.json),
 identified by its root `schema_version`
-value `"1.0"`. For automation, use structured properties, classifications,
-and finding codes; the English `message` text is intended for human readers.
+value `"1.0"`. For automation, structured properties, classifications, and
+finding codes provide the comparison facts. The English `message` text is
+intended for human readers.
 
 The required root properties are:
 
@@ -1256,7 +1251,7 @@ are not recorded.
 
 | Property | Meaning |
 | --- | --- |
-| `basename` | Input filename without its directory. Treat this as potentially sensitive. |
+| `basename` | Input filename without its directory; potentially sensitive. |
 | `format` | `csv`, `tsv`, or `json`. |
 | `encoding` | Always `utf-8`. |
 | `size_bytes` | Exact input size in bytes. |
@@ -1420,9 +1415,10 @@ Findings use the following total order, independent of locale:
 9. Canonical JSON serialization of remaining structured properties, excluding
    `id` and `message`.
 
-Candidates identical under this ordering key are coalesced. IDs `F000001`,
-`F000002`, and so on are assigned after sorting and coalescence; they are local
-to the result rather than persistent identifiers between different comparisons.
+Candidates identical under this ordering key are combined into a single
+finding. The sorted findings receive IDs `F000001`, `F000002`, and so on. These
+IDs are local to the result rather than persistent identifiers between
+comparisons.
 
 ## 8. Errors and corrective action
 
@@ -1434,25 +1430,26 @@ ERROR [category.code]: message
 
 | Code or category | What to check |
 | --- | --- |
-| `invocation.invalid_arguments` | Run `adviso-compare --help`; supply all required options and no subcommand. |
-| `configuration.unreadable` | Check the path and read permission. |
-| `configuration.invalid_syntax` | Check UTF-8 YAML; remove aliases, anchors, tags, merges, and duplicate keys. |
-| `configuration.schema_violation` | Use the reported YAML path to fix a missing, unknown, or invalid property. |
-| `configuration.semantic_violation` | Check named fields, key rules, logical types, operations, mappings, and comparator compatibility. |
-| `configuration.unsupported_version` | Use a configuration schema version supported by the installed tool. |
-| `input.unreadable` | Check the input path and read permission. |
-| `input.unsupported_format` | Give the input a single recognised `.csv`, `.tsv`, or `.json` extension. |
-| `input.invalid_encoding` | Convert the input to valid UTF-8 without silent replacement. |
-| `input.invalid_syntax` | Fix malformed CSV, TSV, or JSON syntax. |
-| `input.invalid_structure` | Check headers, row widths, JSON root shape, record objects, and field names. |
-| `input.invalid_record_key` | Ensure the chosen key is present, non-null, valid, and unique; in automatic mode remove ambiguity or use a custom configuration. |
-| `resource.limit_exceeded` or `resource.exhausted` | Reduce input size or provide more resources, then rerun. No partial result is valid. |
-| `output.invalid_destination` | Select a regular parent with an existing enclosing directory. Check whether the run-directory path is occupied; existing content is never replaced. |
-| `output.write_failed` | Check parent-directory permissions, available storage, and filesystem support for exclusive directory rename. |
-| `internal.unexpected` | Rerun once; if it persists, report the software version and safe reproduction details. Use synthetic examples when sharing reproduction details. |
+| `invocation.invalid_arguments` | `adviso-compare --help` lists the options. The reference, query, and output options are required; the command has no subcommands. |
+| `configuration.unreadable` | The configuration file's location and read permissions. |
+| `configuration.invalid_syntax` | UTF-8 encoding and permitted YAML syntax: aliases, anchors, tags, merges, and duplicate keys are rejected. |
+| `configuration.schema_violation` | The reported YAML path identifies the missing, unknown, or invalid property. |
+| `configuration.semantic_violation` | Named fields, key rules, logical types, operations, mappings, and comparator compatibility. |
+| `configuration.unsupported_version` | The configuration's schema version must be supported by the installed tool. |
+| `input.unreadable` | The input file's location and read permissions. |
+| `input.unsupported_format` | The filename needs a recognised `.csv`, `.tsv`, or `.json` extension. |
+| `input.invalid_encoding` | The input's UTF-8 encoding; any conversion should avoid silent character replacement. |
+| `input.invalid_syntax` | CSV/TSV quoting and record endings, or JSON syntax. |
+| `input.invalid_structure` | Headers, row widths, JSON root shape, record objects, and field names. |
+| `input.invalid_record_key` | The chosen key needs to be present, non-null, valid, and unique. A custom configuration can resolve ambiguous automatic selection. |
+| `resource.limit_exceeded` or `resource.exhausted` | Input size and available resources. A smaller input or additional resources may allow the run to complete; no partial result is valid. |
+| `output.invalid_destination` | The output parent's enclosing directory must exist, and any existing parent must be a regular directory. An occupied run-directory path is also rejected. |
+| `output.write_failed` | Parent-directory permissions, available storage, and filesystem support for exclusive directory rename. |
+| `internal.unexpected` | A retry may resolve a transient failure. If it persists, a useful issue report includes the software version and safe reproduction details using synthetic data. |
 
 An assessment issue inside an otherwise readable and alignable dataset is a
-finding, not an execution error. Review the evidence package for those issues.
+finding, not an execution error. Those issues are available for review in the
+evidence package.
 
 Errors are written to standard error with a non-empty, single-line message;
 additional non-sensitive context may follow. Record-key diagnostics identify
@@ -1468,14 +1465,14 @@ and publish no package.
 The tool operates locally and does not transmit inputs, configurations, or
 results. The evidence package can contain sensitive laboratory or patient
 information, including record identifiers, values needed to explain findings,
-and input basenames. Store it with permissions, retention, backup, and disposal
-controls suitable for the source data. The laboratory remains responsible for
-appropriate pseudonymisation.
+and input basenames. You should store it with permissions, retention, backup,
+and disposal controls suitable for the source data. The laboratory remains
+responsible for appropriate pseudonymisation.
 
 On POSIX systems, newly created output parents and run directories have
 owner-only permissions (`0700`), and evidence files use `0600`. Existing
-parent permissions are retained. On other systems, apply the corresponding
-filesystem access controls under laboratory policy.
+parent permissions are retained. On other systems, you should use the
+corresponding filesystem access controls under laboratory policy.
 
 Routine terminal output and error diagnostics do not reproduce record
 identifiers or source values. The tool does not provide de-identification,
@@ -1494,9 +1491,8 @@ exhaustion produces an error and no partial evidence package.
 ## 10. Reproducing the examples
 
 The examples use synthetic, non-sensitive data. Section 5.1 provides complete
-file contents to save yourself. The other example inputs and YAML are
-hand-maintained fixtures under `docs/examples/`, installed next to this guide.
-No generation script is needed. Their expected stable outcomes are:
+file contents you can save yourself. The other example files are installed in
+the `examples` directory next to this guide. Their expected outcomes are:
 
 | Example | Status | Comparison differences | Assessment issues |
 | --- | --- | ---: | ---: |
@@ -1504,10 +1500,10 @@ No generation script is needed. Their expected stable outcomes are:
 | small custom (Section 5.1) | `complete` | 1 | 0 |
 | custom with transformations (Section 5.2) | `complete` | 3 | 0 |
 
-Run the commands in Sections 3.1, 5.1, and 5.2, then open the report in the run
-directory identified by each completion summary and check the outcomes above.
-The same output parents can be reused: each invocation
-adds a new run directory. Run IDs and completion times change on every run.
+You can reproduce the examples by running the commands in Sections 3.1, 5.1,
+and 5.2, then opening the report in each run directory and checking the outcomes
+against the table. The same output parents can be reused: each invocation adds
+a new run directory. Run IDs and completion times change on every run.
 Software and runtime provenance can change between environments. Input digests
-change if the fixture bytes are edited. The comparison outcome above remains
-the controlled check.
+change if the input files are edited. The outcomes in the table provide a check
+that each example ran as described.
