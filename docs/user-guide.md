@@ -1076,9 +1076,13 @@ outcome: run and phase statuses, summary counts, exclusions, and each finding's
 classification, code, phase, side, record and field identity, priority, and value
 evidence. Input byte provenance, source locations, location-dependent messages,
 and report-local finding IDs may change. Software/runtime provenance is also
-outside the comparison outcome. Identical inputs and configuration selection
-produce the same comparison outcome across the supported Python/OS matrix,
-including Unicode-sensitive processing; runtime provenance may differ.
+outside the comparison outcome.
+
+To reproduce a run, use the recorded software version and Python runtime.
+Python versions can ship different Unicode data, so configured Unicode
+normalisation or case folding can produce different comparison outcomes for
+some characters. The Unicode-data version is recorded in
+`runtime.unicode_version`.
 
 Keep the three files together. The results link to the saved configuration by
 its exact-byte SHA-256 digest, as explained in Section 7.2.2.
