@@ -1281,48 +1281,84 @@ Properties are included only when their finding form needs them:
 | `source_locations` | Independent `reference` and `query` locations; a side is null if its record does not exist. |
 | `field` | Canonical field name for a field finding. |
 | `review_priority` | Resolved `low`, `normal`, or `high` priority for that field. |
-| `values` | Side-specific presence and permitted value evidence. |
+| `values` | Field presence and value evidence for the reference and query sides, as explained below. |
 
 CSV and TSV locations use one-based `record_number` and starting physical
 `line_number`, with optional source `field`. JSON locations use an RFC 6901
 `json_pointer`. An absent field points to its containing record because the
 missing member has no location.
 
-`values.reference` and `values.query` each have `state`: `present` or `absent`.
-An absent side has no `source` or `canonical` value. A present side may include:
+##### Reading `values`
 
-- `source.category`: `string`, `integer`, `decimal`, `boolean`, `null`, `array`,
-  or `object`; `value` is present except for null and recursively contains typed
-  values for arrays and objects;
-- `canonical.logical_type`: `string`, `integer`, `decimal`, `boolean`, `date`,
-  `datetime`, `list`, `set`, or `multiset`; scalar and collection forms contain
-  their uniquely rendered `value`, and collections also contain `element_type`.
+When a finding includes `values`, that object always contains `reference` and
+`query`. Each side describes one source field's presence and, where relevant,
+its value in two forms:
 
-Source numbers retain their original lexical text. Canonical integers use
-ordinary base-10 text without a leading plus or redundant zeros. Canonical
-decimals use `"0"` for all zero values, including negative zero. Non-zero
-decimals use one non-zero digit before the decimal point, no trailing fractional
-zeros, lowercase `e`, and no redundant exponent sign or zeros; exponent zero is
-omitted. For example, `12.30`, `1000`, and `0.0010` become `"1.23e1"`, `"1e3"`,
-and `"1e-3"`. Canonical dates use `YYYY-MM-DD`; datetimes use UTC with redundant
-fractional zeros removed. Booleans remain JSON booleans, and strings retain
-their processed text. Lists retain order; sets and multisets use Unicode
-code-point order of the canonical element strings, with multiset duplicates
-retained. A typed null uses its declared logical type and a JSON null value.
-Untyped `preserved_exact` fields have no typed canonical value.
+- `source` records the value read from the input, with its native `category`.
+- `canonical` records the translated value for a typed field, with its
+  `logical_type`.
 
-The schema defines exact finding forms. In summary:
+For example, suppose a decimal field uses `numeric_exact` with no rounding.
+The reference CSV contains `12.30` and the query CSV contains `12.40`. The
+resulting `value_mismatch` finding includes this `values` object (the rest of
+the finding is omitted here):
 
-- missing and extra records have record identity and locations, but no field,
-  priority, or value evidence;
-- record-specific missing-required-field findings have identity, locations,
-  field, priority, and presence states; the zero-record dataset-level form has
-  only field and priority in addition to the common properties;
-- type, invalid-value, null-policy, and mapping findings have identity,
-  locations, field, priority, and only the value evidence needed to explain the
-  problem;
-- value mismatches have identity, locations, field, priority, and evidence for
-  both sides.
+```json
+{
+  "values": {
+    "reference": {
+      "state": "present",
+      "source": {"category": "string", "value": "12.30"},
+      "canonical": {"logical_type": "decimal", "value": "1.23e1"}
+    },
+    "query": {
+      "state": "present",
+      "source": {"category": "string", "value": "12.40"},
+      "canonical": {"logical_type": "decimal", "value": "1.24e1"}
+    }
+  }
+}
+```
+
+The source categories are `string` because CSV cells are read as text. The
+canonical values are decimals because the configuration declares that logical
+type. Their JSON `value` properties are strings so that numeric precision is
+preserved; here, `"1.23e1"` represents 12.3. The comparator uses the canonical
+values to determine that the field differs.
+
+The finding's `field` property identifies the canonical field. Its reference
+and query source field names, comparator parameters, and processing rules are
+available in the saved configuration rather than repeated inside `values`.
+
+##### Presence, absence, and null
+
+Each side's `state` describes source field presence, not translation success:
+
+- `present` means the source field exists. Its value can still be null,
+  invalid, or unsuitable for the declared logical type.
+- `absent` means the source field is missing, or that side has no record. The
+  object then contains only `"state": "absent"`, with no `source` or `canonical`.
+
+A present side can also contain only its `state` when its value is not needed
+to explain the finding. For example, a missing-required-field finding records
+both presence states without copying the value from the other side.
+
+##### Evidence included by finding code
+
+Evidence is limited to what explains the finding. Every finding has the common
+properties listed at the start of this section. The following table describes
+its additional properties and value evidence; the schema defines the exact
+forms.
+
+| Finding code or form | Additional properties | Contents of `values` |
+| --- | --- | --- |
+| `missing_record`, `extra_record` | `record_identity`, `source_locations` | Omitted. These findings describe whole records, not individual field values. |
+| `missing_required_field`, record-specific | `record_identity`, `source_locations`, `field`, `review_priority` | Presence states only, for both sides. |
+| `missing_required_field`, zero-record dataset-level | `field`, `review_priority` | Omitted; there is no individual record to describe. |
+| `type_mismatch` | `record_identity`, `source_locations`, `field`, `review_priority` | Presence states for both sides; `source` on the affected side, with no `canonical`. |
+| `invalid_field_value`, `mapping_failure` | `record_identity`, `source_locations`, `field`, `review_priority` | Presence states for both sides; `source` on the affected side, with no failed canonical value. |
+| `null_policy_violation` | `record_identity`, `source_locations`, `field`, `review_priority` | Presence states for both sides; `source` on the affected side and, for a typed field, canonical null. |
+| `value_mismatch` | `record_identity`, `source_locations`, `field`, `review_priority` | Presence states and `source` for present sides; `canonical` for typed present sides. Untyped `preserved_exact` fields have no `canonical`. |
 
 Independent contract violations on reference and query produce separate
 side-specific findings. A value mismatch is one finding with side `both`.
@@ -1331,16 +1367,44 @@ valid unequal values produce `type_mismatch`, `invalid_field_value`, and
 `value_mismatch`, respectively, rather than overlapping findings for the same
 affected value. Untyped category differences are value mismatches.
 
-Evidence is limited to what explains the finding. Missing-field findings show
-presence states without copying the other side's value. Type findings include
-affected source values, with canonical values only where parsing succeeded.
-Invalid-value and mapping findings include affected source values without a
-failed canonical value. Null-policy findings include the affected source null
-and, for a typed field, canonical null. Value mismatches include source values
-for present sides and canonical values for typed present sides. Missing or
-extra record findings carry no field values. There is no separate or duplicated
-`not_assessable` finding, and comparator parameters and processing declarations
-are obtained from the saved configuration rather than repeated in findings.
+There is no separate or duplicated `not_assessable` finding: the causal
+assessment issue explains why the value opportunity could not be assessed.
+
+##### Value encoding
+
+Within `source`, `category` is `string`, `integer`, `decimal`, `boolean`,
+`null`, `array`, or `object`. Every category except null has a `value` property:
+
+- Strings and booleans use JSON strings and booleans, respectively.
+- Numbers use JSON strings retaining their original lexical text, including
+  decimal places and exponent notation.
+- Arrays contain an array of source-value objects, each with its own category.
+  Objects map member names to source-value objects in the same way.
+
+Within `canonical`, `logical_type` is `string`, `integer`, `decimal`, `boolean`,
+`date`, `datetime`, `list`, `set`, or `multiset`. Every canonical value has a
+`value` property; collections also have `element_type`.
+
+| Canonical type | Encoding of `value` |
+| --- | --- |
+| `string` | JSON string containing the processed text. |
+| `integer` | JSON string of ordinary base-10 text, without a leading plus or redundant zeros. |
+| `decimal` | JSON string in the normalized decimal form described below. |
+| `boolean` | JSON boolean. |
+| `date` | JSON string in `YYYY-MM-DD` form. |
+| `datetime` | JSON string in UTC, ending in `Z`, with redundant fractional zeros removed. |
+| `list`, `set`, `multiset` | JSON array of canonical element values, encoded according to `element_type`, without per-element type wrappers. Lists retain order. Sets and multisets use Unicode code-point order of the canonical element strings; multiset duplicates are retained. |
+
+For every declared type, canonical null uses JSON null instead of the usual
+`value` encoding. A null collection still includes `element_type`.
+
+Canonical decimals use `"0"` for all zero values, including negative zero.
+Non-zero decimals use one non-zero digit before the decimal point, no trailing
+fractional zeros, lowercase `e`, and no redundant exponent sign or zeros;
+exponent zero is omitted. For example, `12.30`, `1000`, and `0.0010` become
+`"1.23e1"`, `"1e3"`, and `"1e-3"`.
+
+##### Finding order and identifiers
 
 Findings use the following total order, independent of locale:
 
@@ -1374,7 +1438,7 @@ ERROR [category.code]: message
 
 | Code or category | What to check |
 | --- | --- |
-| `invocation.invalid_arguments` | `adviso-compare --help` lists the options. The reference, query, and output options are required; the command has no subcommands. |
+| `invocation.invalid_arguments` | `adviso-compare --help` lists the options. The reference, query, and output options are required. |
 | `configuration.unreadable` | The configuration file's location and read permissions. |
 | `configuration.invalid_syntax` | UTF-8 encoding and permitted YAML syntax: aliases, anchors, tags, merges, and duplicate keys are rejected. |
 | `configuration.schema_violation` | The reported YAML path identifies the missing, unknown, or invalid property. |
@@ -1386,7 +1450,7 @@ ERROR [category.code]: message
 | `input.invalid_syntax` | CSV/TSV quoting and record endings, or JSON syntax. |
 | `input.invalid_structure` | Headers, row widths, JSON root shape, record objects, and field names. |
 | `input.invalid_record_key` | The chosen key needs to be present, non-null, valid, and unique. A custom configuration can resolve ambiguous automatic selection. |
-| `resource.limit_exceeded` or `resource.exhausted` | Input size and available resources. A smaller input or additional resources may allow the run to complete; no partial result is valid. |
+| `resource.exhausted` | Input size and available resources. A smaller input or additional resources may allow the run to complete; no partial result is valid. |
 | `output.invalid_destination` | The output parent's enclosing directory must exist, and any existing parent must be a regular directory. An occupied run-directory path is also rejected. |
 | `output.write_failed` | Parent-directory permissions, available storage, and filesystem support for exclusive directory rename. |
 | `internal.unexpected` | A retry may resolve a transient failure. If it persists, a useful issue report includes the software version and safe reproduction details using synthetic data. |
