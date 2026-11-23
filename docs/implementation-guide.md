@@ -52,6 +52,8 @@ through `prepare_comparison` and `execute_comparison`:
 3. Contract assessment translates in-scope fields on both sides, including
    records that will have no counterpart. It records assessment issues and
    exclusions, retaining translated values for subsequent comparison.
+   Scope selection happens before translation; excluded fields are not passed
+   to the translator.
 4. Record alignment matches canonical keys and records missing and extra
    records.
 5. Value comparison considers in-scope non-key fields in matched records. It

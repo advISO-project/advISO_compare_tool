@@ -49,7 +49,6 @@ class ValueDisposition(str, Enum):
     VALID = "valid"
     ABSENT = "absent"
     NOT_ASSESSABLE = "not_assessable"
-    NOT_ASSESSED = "not_assessed"
 
 
 class TranslationIssueCode(str, Enum):
@@ -126,12 +125,8 @@ def translate_field_value(
     source: NativeValue | None,
     field: FieldDefinition,
     side: InputSide,
-    *,
-    in_scope: bool = True,
 ) -> TranslatedValue:
     """Apply the configured translation pipeline to one attributable field value."""
-    if not in_scope:
-        return TranslatedValue(ValueDisposition.NOT_ASSESSED, source)
     if source is None:
         if _for_side(field.required, side):
             return _failure(

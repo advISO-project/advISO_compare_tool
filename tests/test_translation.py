@@ -247,16 +247,10 @@ def test_scalar_failures_distinguish_category_mismatch_from_invalid_content(
     assert result.issue.stage is TranslationStage.TYPE_PARSING
 
 
-def test_presence_scope_and_null_states_remain_distinct(tmp_path: Path) -> None:
-    """Absence, exclusion, valid null, and prohibited null have distinct outcomes."""
+def test_presence_and_null_states_remain_distinct(tmp_path: Path) -> None:
+    """Required absence, optional absence, and null have distinct outcomes."""
     required = _field_definition(tmp_path, _scalar_field("decimal"))
     missing = translate_field_value(None, required, InputSide.REFERENCE)
-    excluded = translate_field_value(
-        NativeValue(NativeCategory.STRING, "ignored"),
-        required,
-        InputSide.REFERENCE,
-        in_scope=False,
-    )
 
     def optional_nullable(field: JsonObject) -> None:
         _scalar_field("decimal")(field)
@@ -274,7 +268,6 @@ def test_presence_scope_and_null_states_remain_distinct(tmp_path: Path) -> None:
 
     assert missing.disposition is ValueDisposition.NOT_ASSESSABLE
     assert missing.issue.code is TranslationIssueCode.MISSING_REQUIRED_FIELD
-    assert excluded.disposition is ValueDisposition.NOT_ASSESSED
     assert absent.disposition is ValueDisposition.ABSENT
     assert null.disposition is ValueDisposition.VALID
     assert null.is_null
