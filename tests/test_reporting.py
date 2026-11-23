@@ -10,6 +10,7 @@ import errno
 import json
 import os
 import stat
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from decimal import localcontext
@@ -583,21 +584,28 @@ def test_null_comparison_explains_why_two_nulls_do_not_match(
     assert "does not treat two null values as equal" in text
 
 
-@pytest.mark.parametrize("status", ["complete", "incomplete"])
 @pytest.mark.parametrize(
-    "parent_exists",
-    [False, True],
+    ("status", "parent_exists", "creation_mask"),
+    [
+        ("complete", False, 0o002),
+        ("complete", True, 0o077),
+        ("incomplete", False, 0o022),
+        ("incomplete", True, 0o002),
+    ],
     ids=[
-        "new-parent",
-        "existing-parent",
+        "complete-new-parent-group-writable",
+        "complete-existing-parent-owner-only",
+        "incomplete-new-parent-public-readable",
+        "incomplete-existing-parent-group-writable",
     ],
 )
-def test_publication_creates_exact_private_three_file_package(
+def test_publication_creates_exact_three_file_package_with_normal_permissions(
     tmp_path: Path,
     status: str,
     parent_exists: bool,
+    creation_mask: int,
 ) -> None:
-    """Publish exact evidence in a private child named by result metadata."""
+    """Publish exact evidence with normal modes, preserving an existing parent."""
     evidence = _generated_evidence(
         tmp_path / "inputs", incomplete=status == "incomplete"
     )
@@ -605,10 +613,17 @@ def test_publication_creates_exact_private_three_file_package(
     parent = tmp_path / f"comparison.{status}.evidence"
     if parent_exists:
         parent.mkdir()
+        if os.name == "posix":
+            parent.chmod(0o2750)
     parent_mode = parent.stat().st_mode if parent_exists else None
     expected = parent / "20261109T123456Z-123e4567-e89b-42d3-a456-426614174000"
 
-    selected = _publish(parent, evidence)
+    previous_mask = os.umask(creation_mask) if os.name == "posix" else None
+    try:
+        selected = _publish(parent, evidence)
+    finally:
+        if previous_mask is not None:
+            os.umask(previous_mask)
 
     assert selected == expected
     assert list(parent.iterdir()) == [selected]
@@ -636,10 +651,16 @@ def test_publication_creates_exact_private_three_file_package(
         assert parent.stat().st_mode == parent_mode
     if os.name == "posix":
         if not parent_exists:
-            assert stat.S_IMODE(parent.stat().st_mode) == 0o700
-        assert stat.S_IMODE(selected.stat().st_mode) == 0o700
+            assert parent.stat().st_mode & 0o777 == 0o777 & ~creation_mask
+        assert selected.stat().st_mode & 0o777 == 0o777 & ~creation_mask
+        if sys.platform == "linux":
+            assert selected.stat().st_mode & stat.S_ISGID == (
+                parent.stat().st_mode & stat.S_ISGID
+            )
+        assert selected.stat().st_gid == parent.stat().st_gid
         for member in selected.iterdir():
-            assert stat.S_IMODE(member.stat().st_mode) == 0o600
+            assert stat.S_IMODE(member.stat().st_mode) == 0o666 & ~creation_mask
+            assert member.stat().st_gid == parent.stat().st_gid
     assert not list(tmp_path.glob(f".{parent.name}.*"))
 
 
@@ -808,7 +829,7 @@ def test_failed_initial_write_publishes_nothing_and_cleans_staging(
     def fail_selected_member(path: Path, content: bytes) -> None:
         nonlocal failure_attempted
         if os.name == "posix":
-            assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
+            assert path.parent.parent.stat().st_mode & 0o777 == 0o700
         if path.name == failure_member:
             failure_attempted = True
             real_write(path, b"partial member")

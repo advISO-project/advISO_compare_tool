@@ -171,9 +171,8 @@ def publish_evidence_package(parent: Path, result: ComparisonEvidence) -> Path:
         staging_root = Path(
             tempfile.mkdtemp(prefix=".adviso-compare.staging-", dir=parent)
         )
-        os.chmod(staging_root, 0o700)
         stage = staging_root / "package"
-        stage.mkdir(mode=0o700)
+        stage.mkdir()
         _write_staged_member(stage / RESULTS_FILENAME, json_content)
         _write_staged_member(stage / CONFIGURATION_FILENAME, result.configuration_bytes)
         _write_staged_member(stage / REPORT_FILENAME, html_content)
@@ -194,7 +193,7 @@ def publish_evidence_package(parent: Path, result: ComparisonEvidence) -> Path:
 
 
 def _prepare_output_parent(parent: Path) -> None:
-    """Accept or privately create a regular parent without reading contents."""
+    """Accept or create a regular parent without reading contents."""
     try:
         mode = parent.lstat().st_mode
     except (FileNotFoundError, NotADirectoryError):
@@ -204,7 +203,7 @@ def _prepare_output_parent(parent: Path) -> None:
                 message="the output parent's enclosing directory must exist",
             ) from None
         try:
-            parent.mkdir(mode=0o700)
+            parent.mkdir()
         except FileExistsError:
             # A concurrent publisher may have created the shared parent.
             pass
@@ -306,14 +305,13 @@ def _write_staged_member(path: Path, content: bytes) -> None:
         descriptor = os.open(
             path,
             os.O_WRONLY | os.O_CREAT | os.O_EXCL,
-            0o600,
+            0o666,
         )
         with os.fdopen(descriptor, "wb") as stream:
             descriptor = None
             stream.write(content)
             stream.flush()
             os.fsync(stream.fileno())
-        os.chmod(path, 0o600)
     finally:
         if descriptor is not None:
             os.close(descriptor)

@@ -177,17 +177,23 @@ exact difference/tolerance arithmetic with `comparators.py`, avoiding a separate
 interpretation of the comparison rule.
 
 `reporting.publish_evidence_package` renders HTML before preparing output,
-writes all three members into a private staging directory inside the output
-parent, and publishes the completed directory through an exclusive rename.
-Members are written directly under their staged filenames using exclusive
-creation, private permissions, and file synchronization before publication.
-The final name comes from the run timestamp and identifier. Publication refuses
-an existing destination and cleans up its own staging area on failure.
+writes all three members into a package directory beneath a private outer
+staging directory inside the output parent, and publishes the completed package
+directory through an exclusive rename. `tempfile.mkdtemp` requests `0700` for
+the outer staging directory; no subsequent `chmod` clears inherited group flags.
+New output parents and package directories use ordinary directory creation
+(`0777` requested), and members use exclusive file creation (`0666` requested),
+subject to the process's `umask` and applicable inherited access controls.
+Members are synchronized before publication, and renaming preserves the package's
+permissions. The final name comes from the run timestamp and identifier.
+Publication refuses an existing destination and cleans up its own staging area
+on failure.
 
 The exclusive rename uses platform-specific filesystem operations. Unsupported
 safe publication produces an output error rather than a replacement-based
-fallback. POSIX directory and file modes restrict access to newly created
-evidence. These details belong in publication code, not comparison phases.
+fallback. Access to published evidence follows the destination's filesystem
+controls and creation environment. These details belong in publication code,
+not comparison phases.
 
 ## Errors and determinism
 

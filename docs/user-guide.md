@@ -1024,7 +1024,8 @@ and preserves existing content.
 
 The output parent may already exist and contain any files or directories.
 Existing contents and permissions are preserved. If the parent does not exist,
-the tool creates it privately; its enclosing directory must already exist.
+the tool creates it using normal filesystem permissions; its enclosing
+directory must already exist.
 The selected parent cannot be a symbolic link, regular file, or special
 filesystem object. Symbolic links in ancestor directories are permitted.
 
@@ -1477,10 +1478,16 @@ and input basenames. You should store it with permissions, retention, backup,
 and disposal controls suitable for the source data. The laboratory remains
 responsible for appropriate pseudonymisation.
 
-On POSIX systems, newly created output parents and run directories have
-owner-only permissions (`0700`), and evidence files use `0600`. Existing
-parent permissions are retained. On other systems, you should use the
-corresponding filesystem access controls under laboratory policy.
+New output parents, run directories, and evidence files use normal filesystem
+creation permissions, subject to the process's `umask` on POSIX systems and
+applicable inherited access controls. Existing parent permissions are retained.
+On POSIX systems, the temporary outer staging directory remains owner-only
+while the package is being assembled.
+
+For confidential output, you should select a parent directory with access
+restricted to the appropriate users or laboratory group. The tool does not
+enforce owner-only access to published evidence. On other systems, you should
+use the corresponding filesystem access controls under laboratory policy.
 
 Routine terminal output and error diagnostics do not reproduce record
 identifiers or source values. The tool does not provide de-identification,
