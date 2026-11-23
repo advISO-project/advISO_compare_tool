@@ -113,6 +113,10 @@ the relevant source facts.
 Most domain objects are frozen dataclasses, with tuples and read-only mappings
 where appropriate. JSON dictionaries are used at document boundaries.
 
+Returning `ContractResult` or `RecordsResult` implies that phase completed;
+results assembly records their fixed `complete` statuses. `ValuesResult` carries
+a status because blocked value opportunities can make that phase incomplete.
+
 The configuration has two complementary representations. Domain fields have
 defaults resolved for execution, while the saved document preserves the
 selected configuration, including omitted optional properties. Saving does not

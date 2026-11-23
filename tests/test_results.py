@@ -265,7 +265,11 @@ def test_incomplete_result_retains_causal_evidence_without_duplicate_finding(
 
     results_validator().validate(result)
     assert result["run"]["status"] == "incomplete"
-    assert result["phases"]["values"] == "incomplete"
+    assert result["phases"] == {
+        "contract": "complete",
+        "records": "complete",
+        "values": "incomplete",
+    }
     assert result["summary"]["values"] == {
         "matched": 0,
         "mismatched": 0,

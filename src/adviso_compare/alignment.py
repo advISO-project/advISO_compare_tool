@@ -15,12 +15,6 @@ from adviso_compare.inputs import InputSide, SourceLocation
 from adviso_compare.records import KeyedRecord, RecordKey, RecordModel
 
 
-class RecordsPhaseStatus(str, Enum):
-    """Completion state of the records phase."""
-
-    COMPLETE = "complete"
-
-
 class RecordDisposition(str, Enum):
     """Relationship of one canonical key across the two datasets."""
 
@@ -111,7 +105,6 @@ class RecordCounts:
 class RecordsResult:
     """Complete deterministic alignment of two valid record models."""
 
-    status: RecordsPhaseStatus
     alignments: tuple[RecordAlignment, ...]
     findings: tuple[RecordFinding, ...]
     counts: RecordCounts
@@ -176,7 +169,6 @@ def align_records(
     )
     alignment_tuple = tuple(alignments)
     return RecordsResult(
-        status=RecordsPhaseStatus.COMPLETE,
         alignments=alignment_tuple,
         findings=tuple(findings),
         counts=RecordCounts(

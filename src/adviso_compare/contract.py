@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from enum import Enum
 from types import MappingProxyType
 from typing import TypeAlias
 
@@ -28,12 +27,6 @@ from adviso_compare.translation import (
     ValueDisposition,
     translate_field_value,
 )
-
-
-class ContractPhaseStatus(str, Enum):
-    """Completion state of the contract phase."""
-
-    COMPLETE = "complete"
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,7 +115,6 @@ AssessmentIndex: TypeAlias = Mapping[tuple[InputSide, RecordKey, str], FieldAsse
 class ContractResult:
     """Complete contract outcomes needed by later comparison phases."""
 
-    status: ContractPhaseStatus
     assessments: tuple[FieldAssessment, ...]
     findings: tuple[ContractFinding, ...]
     exclusions: tuple[FieldExclusion, ...]
@@ -194,7 +186,6 @@ def assess_contract(
         for assessment in assessments
     }
     return ContractResult(
-        status=ContractPhaseStatus.COMPLETE,
         assessments=tuple(assessments),
         findings=tuple(findings),
         exclusions=exclusions,

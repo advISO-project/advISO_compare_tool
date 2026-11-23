@@ -13,7 +13,6 @@ import yaml
 
 from adviso_compare.alignment import (
     RecordDisposition,
-    RecordsPhaseStatus,
     RecordsResult,
     align_records,
 )
@@ -80,7 +79,6 @@ def test_reordered_inputs_have_the_same_complete_alignment(tmp_path: Path) -> No
     first_result = _align(first)
     second_result = _align(second)
 
-    assert first_result.status is RecordsPhaseStatus.COMPLETE
     assert first_result.findings == second_result.findings == ()
     assert [
         (alignment.canonical_identity, alignment.disposition)
@@ -170,7 +168,6 @@ def test_missing_and_extra_records_are_all_reported_deterministically(
     )
     reordered_result = _align(reordered)
 
-    assert result.status is RecordsPhaseStatus.COMPLETE
     alignment_outcome = [
         (alignment.canonical_identity, alignment.disposition)
         for alignment in result.alignments
@@ -289,7 +286,6 @@ def test_empty_and_one_sided_datasets_reconcile_without_special_cases(
 
     result = _align(prepared)
 
-    assert result.status is RecordsPhaseStatus.COMPLETE
     assert (
         result.counts.reference,
         result.counts.query,

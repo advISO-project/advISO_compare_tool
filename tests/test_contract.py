@@ -13,7 +13,6 @@ import yaml
 from adviso_compare.application import PreparedComparison, prepare_comparison
 from adviso_compare.contract import (
     ConfiguredFieldExclusion,
-    ContractPhaseStatus,
     ContractResult,
     UndeclaredFieldExclusion,
     assess_contract,
@@ -189,7 +188,6 @@ def test_mixed_contract_collects_every_causal_finding_and_continues(
 
     result = _assess(prepared)
 
-    assert result.status is ContractPhaseStatus.COMPLETE
     observed = [
         (
             finding.code,
@@ -345,7 +343,6 @@ def test_zero_record_headers_support_dataset_contract_checks_and_zero_counts(
 
     result = _assess(prepared)
 
-    assert result.status is ContractPhaseStatus.COMPLETE
     assert result.assessments == ()
     assert [
         (finding.code, finding.side, finding.canonical_field, finding.record)
@@ -390,7 +387,6 @@ def test_empty_json_exposes_no_structure_for_dataset_missing_field_findings(
 
     result = _assess(prepared)
 
-    assert result.status is ContractPhaseStatus.COMPLETE
     assert result.assessments == ()
     assert result.findings == ()
     assert result.exclusions == ()
@@ -418,7 +414,6 @@ def test_automatic_configuration_drives_contract_assessment_and_exclusions(
 
     result = _assess(prepared)
 
-    assert result.status is ContractPhaseStatus.COMPLETE
     assert result.findings == ()
     assert [
         (
