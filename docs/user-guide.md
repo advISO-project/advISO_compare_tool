@@ -447,7 +447,7 @@ only one record:
 
 A single root object is not accepted. Every array item must be an object.
 Top-level record field names must be non-empty and unique. Duplicate member
-names anywhere in the JSON are give rise to an error.
+names anywhere in the JSON give rise to an error.
 
 JSON strings, integers, decimals, booleans, nulls, arrays, and objects retain
 their natural JSON type. Decimal numbers are read exactly without first being
@@ -838,7 +838,7 @@ side must match an entry. An unmapped value produces a `mapping_failure`; it is
 not passed through. Many source values may map to the same destination. A
 destination may be null, after which the null policy applies.
 
-A mapping destination may also use `category: "null"` without a `value`. This converts the mapped source value to null, after which the field’s `null_policy` is applied. Mapping from null is not supported because an actual JSON null is recognised andhandled before value mapping.
+A mapping destination may also use `category: "null"` without a `value`. This converts the mapped source value to null, after which the field’s `null_policy` is applied. Mapping from null is not supported because an actual JSON null is recognised and handled before value mapping.
 
 Mapping happens after source normalisation and missing-token recognition, and
 before parsing to the logical type.
@@ -1087,327 +1087,307 @@ and works offline. Required styling is embedded; the report loads no external sc
 
 ## 7. JSON output reference
 
-The evidence package contains two JSON documents with different purposes:
-
-| File | Contents |
-| --- | --- |
-| `comparison-configuration.json` | The effective configuration: its identity, field definitions, scope, and comparison rules. |
-| `comparison-results.json` | The run's findings, counts, statuses, input provenance, and digest link to the configuration. |
-
-Before publication, `adviso-compare` checks the JSON structures, the
-configuration digest, and agreement with the inputs and comparison outcomes.
-
-The subsections below describe the fields in each document. Both schemas are
-included with the installed software.
+The evidence package contains the comparison configuration and the results as
+separate JSON documents. Before publication, `adviso-compare` checks their
+structures, the configuration digest, and agreement with the inputs and
+comparison outcomes. Both schemas are included with the installed software.
 
 ### 7.1 `comparison-configuration.json`
 
-This is the complete effective configuration selected or generated for the
-run, saved as JSON. Its schema is
-[`comparison-configuration-v1.0.schema.json`](https://github.com/advISO-project/advISO_compare_tool/blob/main/src/adviso_compare/schemas/comparison-configuration-v1.0.schema.json),
-identified by its own root
-`schema_version` value `"1.0"`.
+For a custom comparison, this is the configuration supplied as YAML in
+[Section 5](#5-custom-comparison-configurations), saved as JSON. The property
+names, structure, and comparison rules are the same. For an automatic comparison,
+it contains the
+configuration generated according to [Section 4.3](#43-automatic-mode).
 
-The three root properties are `schema_version`, `metadata`, and `fields`.
-All are required. Their fields are:
-
-| Property | Meaning |
-| --- | --- |
-| `schema_version` | Configuration document format, currently `"1.0"`. |
-| `metadata.id` | Stable identifier of the configuration. |
-| `metadata.revision` | Revision assigned by its owner, or by the tool for automatic mode. |
-| `metadata.title` | Optional human-readable title. |
-| `metadata.description` | Optional human-readable description. |
-| `fields.record_key` | Ordered canonical field names identifying records. |
-| `fields.in_scope` | Canonical fields selected for assessment, including the key fields. |
-| `fields.definitions` | Field definitions indexed by canonical field name. |
-
-Sections 5.4–5.13 describe the permitted configuration properties, values,
-constraints, and interactions; the [field-definition reference](#55-field-definitions)
-lists the settings within each `fields.definitions` entry. The same structure
-applies to a parsed custom YAML configuration and to this saved JSON document. Metadata does not change the comparison rules.
-
-The saved configuration preserves explicit declarations and list order.
-Optional properties that were omitted remain absent; internal defaults are
-not added. In automatic mode, `metadata.id` is
-`adviso-compare:automatic-strict-exact` and `metadata.revision` is `"1.0"`. This
-revision identifies the generated configuration, separately from its schema
-version.
-
-The saved document contains no run ID or completion timestamp. Its identity
-and revision are read here rather than duplicated in the results. Results link
-to its exact saved bytes through `comparison_configuration_digest`.
+In automatic mode, `metadata.id` is
+`adviso-compare:automatic-strict-exact` and `metadata.revision` is `"1.0"`.
+This revision identifies the generated configuration, separately from its
+schema version. Configuration identity and revision are read from this file,
+rather than duplicated in the results. It contains no run ID or completion
+timestamp; the results link to its exact saved bytes through
+`comparison_configuration_digest`.
 
 ### 7.2 `comparison-results.json`
 
-This document describes the comparison outcome. Its schema is
-[`comparison-results-v1.0.schema.json`](https://github.com/advISO-project/advISO_compare_tool/blob/main/src/adviso_compare/schemas/comparison-results-v1.0.schema.json),
-identified by its root `schema_version`
-value `"1.0"`. For automation, structured properties, classifications, and
-finding codes provide the comparison facts. The English `message` text is
-intended for human readers.
+The complete example below continues the
+[small custom comparison in Section 5.1](#51-a-small-custom-comparison).
+Both records align; the measurements for `S1` match, while `2.00` and `2.10`
+for `S2` produce one finding. The run completes without assessment issues.
 
-The required root properties are:
-
-| Property | Meaning |
-| --- | --- |
-| `schema_version` | Results document format. |
-| `run` | Run identity, status, and completion time. |
-| `phases` | Completion status of each comparison phase. |
-| `software` | Software identity and version used for the run. |
-| `runtime` | Python, platform, and Unicode-data provenance. |
-| `inputs` | Basenames, formats, sizes, and exact-byte input digests. |
-| `record_key_fields` | Ordered reference, query, and canonical key-field names. |
-| `comparison_configuration_digest` | SHA-256 link to the saved configuration bytes. |
-| `summary` | Record, value-opportunity, and finding counts. |
-| `exclusions` | Fields outside the comparison scope. |
-| `findings` | Individual comparison differences and assessment issues. |
-
-Empty `exclusions` and `findings` arrays remain present. Unknown properties
-are rejected at the defined object levels.
-
-#### 7.2.1 Run and provenance
-
-| Property | Meaning |
-| --- | --- |
-| `schema_version` | Must be `"1.0"`, identifying the results format. |
-| `run.id` | Random lowercase UUID version 4 for this run. |
-| `run.status` | `complete` or `incomplete`. Error runs do not produce this JSON. |
-| `run.completed_at` | Completion time in UTC, as `YYYY-MM-DDTHH:MM:SSZ`. |
-| `phases.contract` | Always `complete`. |
-| `phases.records` | Always `complete`. |
-| `phases.values` | `incomplete` if any value opportunity is not assessable; otherwise `complete`. |
-| `software.name` | Always `adviso-compare`. |
-| `software.version` | Installed software version. |
-| `software.build` | Optional non-empty build identifier when one is available. |
-| `runtime.python` | Python implementation and full version, such as `cpython-3.12.7`. |
-| `runtime.platform` | General operating-system family and architecture, such as `linux-x86_64`; no host identity. |
-| `runtime.unicode_version` | Unicode database version used by text operations. |
-
-Runtime names are lowercase. Python is recorded as
-`<implementation>-<major>.<minor>.<micro>`, with a prerelease suffix where
-applicable. Platforms use `<operating-system-family>-<architecture>`;
-`amd64` becomes `x86_64` and `arm64` becomes `aarch64`. Platform provenance
-omits distribution and kernel versions and host-specific details. The Unicode
-database version uses `<major>.<minor>.<patch>`. Start time and elapsed duration
-are not recorded.
-
-`inputs.reference` and `inputs.query` each contain:
-
-| Property | Meaning |
-| --- | --- |
-| `basename` | Input filename without its directory; potentially sensitive. |
-| `format` | `csv`, `tsv`, or `json`. |
-| `encoding` | Always `utf-8`. |
-| `size_bytes` | Exact input size in bytes. |
-| `digest.algorithm` | Always `sha256`. |
-| `digest.value` | Lowercase 64-character SHA-256 digest of the exact bytes. |
-
-Absolute paths, usernames, hostnames, environment variables, working
-directories, raw command lines, and dependency inventories are not included.
-
-#### 7.2.2 Record keys and configuration digest
-
-`record_key_fields.reference`, `.query`, and `.canonical` are ordered,
-non-empty arrays of unique field names. Their common order is the component
-order of a composite key.
-
-The required top-level `comparison_configuration_digest` has exactly two
-properties:
-
-| Property | Meaning |
-| --- | --- |
-| `algorithm` | Always `sha256`. |
-| `value` | Lowercase 64-character SHA-256 digest of the exact saved `comparison-configuration.json` bytes, including the final newline. |
-
-The digest covers the saved JSON bytes, not the custom source YAML. Even a
-whitespace edit changes it. Downstream software can check this link by hashing
-the original file bytes; parsing and reserializing the JSON may change those
-bytes. The digest establishes content linkage; it does not prove authenticity
-or laboratory approval.
-
-The configuration's schema version, ID, and revision are held in the saved
-document's `schema_version`, `metadata.id`, and `metadata.revision`. They are
-not duplicated in the results. The sibling filename is fixed; no configuration
-path, URI, or alternative filename is selected by the results document.
-
-#### 7.2.3 Summary and exclusions
-
-`summary.records` contains non-negative counts: `reference`, `query`, `matched`,
-`missing`, and `extra`. The reference count equals matched plus missing; the
-query count equals matched plus extra.
-
-`summary.values` contains `matched`, `mismatched`, and `not_assessable` counts
-for all in-scope non-key value opportunities. Each opportunity appears in
-exactly one count.
-
-`summary.findings.total` is the total number of findings.
-`by_classification` always contains `comparison_difference` and
-`assessment_issue`. `by_code` always contains all eight finding codes.
-`by_review_priority` always contains `low`, `normal`, `high`, and `unassigned`.
-Zero-valued entries remain present. Each grouping sums to `total`.
-
-Each item in `exclusions` has one of two exact forms:
-
-- `configured_field_excluded`: `code` and `canonical_field`;
-- `undeclared_field_excluded`: `code`, `side` (`reference` or `query`),
-  `source_field`, and non-negative `record_count`.
-
-Exclusions are not findings and do not affect run status.
-
-Configured-field exclusions come first, ordered by canonical field name using
-Unicode code-point order. Undeclared-field exclusions follow, ordered by side
-(`reference`, then `query`) and source field name. Their `record_count` is the
-number of records containing that field, including zero for a field exposed
-only by a header in a zero-record dataset.
-
-#### 7.2.4 Finding properties
-
-Every finding has `id`, `classification`, `code`, `phase`, `message`, and
-`affected_side`.
-
-- `id` is a report-local sequence such as `F000001`.
-- `classification` is `comparison_difference` or `assessment_issue`.
-- `code` is one of the eight codes in Section 3.2.3.
-- `phase` is `contract`, `records`, or `values`.
-- `message` is deterministic English presentation text. It adds no fact that is
-  absent from the structured fields.
-- `affected_side` is `reference`, `query`, or `both`, as allowed for the code.
-
-Properties are included only when their finding form needs them:
-
-| Property | Meaning |
-| --- | --- |
-| `record_identity` | Ordered `reference`, `query`, and `canonical` value arrays. A missing record's absent side is JSON null. A one-field key still uses a one-item array. |
-| `source_locations` | Independent `reference` and `query` locations; a side is null if its record does not exist. |
-| `field` | Canonical field name for a field finding. |
-| `review_priority` | Resolved `low`, `normal`, or `high` priority for that field. |
-| `values` | Field presence and value evidence for the reference and query sides, as explained below. |
-
-CSV and TSV locations use one-based `record_number` and starting physical
-`line_number`, with optional source `field`. JSON locations use an RFC 6901
-`json_pointer`. An absent field points to its containing record because the
-missing member has no location.
-
-##### Reading `values`
-
-When a finding includes `values`, that object always contains `reference` and
-`query`. Each side describes one source field's presence and, where relevant,
-its value in two forms:
-
-- `source` records the value read from the input, with its native `category`.
-- `canonical` records the translated value for a typed field, with its
-  `logical_type`.
-
-For example, suppose a decimal field uses `numeric_exact` with no rounding.
-The reference CSV contains `12.30` and the query CSV contains `12.40`. The
-resulting `value_mismatch` finding includes this `values` object (the rest of
-the finding is omitted here):
+The run ID, timestamp, software version, and runtime below are illustrative.
+Input sizes and hashes correspond to the Section 5.1 files saved with LF line
+endings and a final newline. The configuration digest corresponds to the JSON
+saved by the tool. Formatting is compacted here for readability; no properties
+or array entries have been omitted.
 
 ```json
 {
-  "values": {
+  "schema_version": "1.0",
+  "run": {
+    "id": "123e4567-e89b-42d3-a456-426614174000",
+    "status": "complete",
+    "completed_at": "2026-11-24T12:00:00Z"
+  },
+  "phases": {"contract": "complete", "records": "complete", "values": "complete"},
+  "software": {"name": "adviso-compare", "version": "0.1.0"},
+  "runtime": {"python": "cpython-3.12.16", "platform": "linux-x86_64", "unicode_version": "15.0.0"},
+  "inputs": {
     "reference": {
-      "state": "present",
-      "source": {"category": "string", "value": "12.30"},
-      "canonical": {"logical_type": "decimal", "value": "1.23e1"}
+      "basename": "reference.csv",
+      "format": "csv",
+      "encoding": "utf-8",
+      "size_bytes": 38,
+      "digest": {
+        "algorithm": "sha256",
+        "value": "32951431ac179b397b844aa192f2a8f3ac15dc4c9d9dea220eeb93a30be90020"
+      }
     },
     "query": {
-      "state": "present",
-      "source": {"category": "string", "value": "12.40"},
-      "canonical": {"logical_type": "decimal", "value": "1.24e1"}
+      "basename": "query.csv",
+      "format": "csv",
+      "encoding": "utf-8",
+      "size_bytes": 30,
+      "digest": {
+        "algorithm": "sha256",
+        "value": "7a5f3f7ffed017defbab7f42453ff88c4c34446a476a09394f0557eae2367c0f"
+      }
     }
-  }
+  },
+  "record_key_fields": {"reference": ["record_id"], "query": ["sample_id"], "canonical": ["sample"]},
+  "comparison_configuration_digest": {
+    "algorithm": "sha256",
+    "value": "141da1749976240af55aec559a30f47787c5058f72bd61918354c09496960920"
+  },
+  "summary": {
+    "records": {"reference": 2, "query": 2, "matched": 2, "missing": 0, "extra": 0},
+    "values": {"matched": 1, "mismatched": 1, "not_assessable": 0},
+    "findings": {
+      "total": 1,
+      "by_classification": {"comparison_difference": 1, "assessment_issue": 0},
+      "by_code": {
+        "missing_record": 0,
+        "extra_record": 0,
+        "missing_required_field": 0,
+        "type_mismatch": 0,
+        "invalid_field_value": 0,
+        "null_policy_violation": 0,
+        "mapping_failure": 0,
+        "value_mismatch": 1
+      },
+      "by_review_priority": {"low": 0, "normal": 1, "high": 0, "unassigned": 0}
+    }
+  },
+  "exclusions": [],
+  "findings": [
+    {
+      "id": "F000001",
+      "classification": "comparison_difference",
+      "code": "value_mismatch",
+      "phase": "values",
+      "message": "Reference and query values for field 'measurement' differ.",
+      "affected_side": "both",
+      "record_identity": {"reference": ["S2"], "query": ["S2"], "canonical": ["S2"]},
+      "source_locations": {
+        "reference": {"record_number": 2, "line_number": 3, "field": "measurement"},
+        "query": {"record_number": 2, "line_number": 3, "field": "result"}
+      },
+      "field": "measurement",
+      "review_priority": "normal",
+      "values": {
+        "reference": {
+          "state": "present",
+          "source": {"category": "string", "value": "2.00"},
+          "canonical": {"logical_type": "decimal", "value": "2"}
+        },
+        "query": {
+          "state": "present",
+          "source": {"category": "string", "value": "2.10"},
+          "canonical": {"logical_type": "decimal", "value": "2.1"}
+        }
+      }
+    }
+  ]
 }
 ```
 
-The source categories are `string` because CSV cells are read as text. The
-canonical values are decimals because the configuration declares that logical
-type. Their JSON `value` properties are strings so that numeric precision is
-preserved; here, `"1.23e1"` represents 12.3. The comparator uses the canonical
-values to determine that the field differs.
+The schema is
+[`comparison-results-v1.0.schema.json`](https://github.com/advISO-project/advISO_compare_tool/blob/main/src/adviso_compare/schemas/comparison-results-v1.0.schema.json).
+All root properties shown are required, including empty `exclusions` and
+`findings` arrays when applicable. For automation, structured properties and finding codes
+provide the comparison facts; English `message` text is intended for readers.
 
-The finding's `field` property identifies the canonical field. Its reference
-and query source field names, comparator parameters, and processing rules are
-available in the saved configuration rather than repeated inside `values`.
+#### 7.2.1 Run and provenance
 
-##### Presence, absence, and null
+The opening properties identify the results format, run, software and runtime.
 
-Each side's `state` describes source field presence, not translation success:
+Each run receives its own random lowercase UUID version 4 and a UTC completion
+timestamp in `YYYY-MM-DDTHH:MM:SSZ` form. Start time and elapsed duration are not recorded.
 
-- `present` means the source field exists. Its value can still be null,
-  invalid, or unsuitable for the declared logical type.
-- `absent` means the source field is missing, or that side has no record. The
-  object then contains only `"state": "absent"`, with no `source` or `canonical`.
+In the example, all three phases are complete. As explained in
+[Section 3.2](#32-read-and-interpret-the-results), completion does not imply
+agreement. Published results always have complete contract and records phases;
+the values phase is incomplete if any value opportunity is not assessable.
+`run.status` follows that values-phase status. Error runs produce no results
+JSON.
 
-A present side can also contain only its `state` when its value is not needed
-to explain the finding. For example, a missing-required-field finding records
-both presence states without copying the value from the other side.
+`software.name` is always `adviso-compare`; `version` records the installed
+version. An optional non-empty `build` can identify a build. Runtime names are
+lowercase: Python uses `<implementation>-<major>.<minor>.<micro>` with a
+prerelease suffix where applicable, and the platform uses
+`<operating-system-family>-<architecture>`. Architecture names normalize
+`amd64` to `x86_64` and `arm64` to `aarch64`. `unicode_version` identifies the
+text-processing database as `<major>.<minor>.<patch>`.
 
-##### Evidence included by finding code
+`inputs.reference` and `inputs.query` then identify the files read. In this
+example, `reference.csv` is 38 bytes and `query.csv` is 30 bytes. Each input
+records its basename, format (`csv`, `tsv`, or `json`), encoding (`utf-8`),
+byte size, and SHA-256 digest. Digests are lowercase 64-character strings and
+cover the exact original bytes, so changing line endings changes the digest.
 
-Evidence is limited to what explains the finding. Every finding has the common
-properties listed at the start of this section. The following table describes
-its additional properties and value evidence; the schema defines the exact
-forms.
+Provenance omits absolute paths, usernames, hostnames, distribution and kernel
+versions, environment variables, working directories, raw command lines, and
+dependency inventories. Input basenames can still be sensitive.
 
-| Finding code or form | Additional properties | Contents of `values` |
-| --- | --- | --- |
-| `missing_record`, `extra_record` | `record_identity`, `source_locations` | Omitted. These findings describe whole records, not individual field values. |
-| `missing_required_field`, record-specific | `record_identity`, `source_locations`, `field`, `review_priority` | Presence states only, for both sides. |
-| `missing_required_field`, zero-record dataset-level | `field`, `review_priority` | Omitted; there is no individual record to describe. |
-| `type_mismatch` | `record_identity`, `source_locations`, `field`, `review_priority` | Presence states for both sides; `source` on the affected side, with no `canonical`. |
-| `invalid_field_value`, `mapping_failure` | `record_identity`, `source_locations`, `field`, `review_priority` | Presence states for both sides; `source` on the affected side, with no failed canonical value. |
-| `null_policy_violation` | `record_identity`, `source_locations`, `field`, `review_priority` | Presence states for both sides; `source` on the affected side and, for a typed field, canonical null. |
-| `value_mismatch` | `record_identity`, `source_locations`, `field`, `review_priority` | Presence states and `source` for present sides; `canonical` for typed present sides. Untyped `preserved_exact` fields have no `canonical`. |
+#### 7.2.2 Record keys and configuration digest
 
-Independent contract violations on reference and query produce separate
-side-specific findings. A value mismatch is one finding with side `both`.
-Category incompatibility, invalid content within an accepted category, and two
-valid unequal values produce `type_mismatch`, `invalid_field_value`, and
-`value_mismatch`, respectively, rather than overlapping findings for the same
-affected value. Untyped category differences are value mismatches.
+The example associates the two source identifier names with canonical `sample`.
+These are non-empty arrays of unique field names. Their order defines the
+component order for a composite key; a single-field key still uses an array.
 
-There is no separate or duplicated `not_assessable` finding: the causal
-assessment issue explains why the value opportunity could not be assessed.
+The `comparison_configuration_digest` object links the results to the saved configuration.
+`algorithm` is always `sha256`. The lowercase 64-character `value` hashes the
+exact bytes of `comparison-configuration.json`, including its final newline,
+rather than the original YAML. Even a whitespace edit changes the digest.
+Downstream software can check the link by hashing the saved file directly;
+parsing and reserializing it may change the bytes. This establishes content
+linkage, not authenticity or laboratory approval.
 
-##### Value encoding
+The configuration's schema version, ID, and revision remain in that file's
+`schema_version`, `metadata.id`, and `metadata.revision`. Its sibling filename
+is fixed; the results do not select another path, URI, or filename.
 
-Within `source`, `category` is `string`, `integer`, `decimal`, `boolean`,
-`null`, `array`, or `object`. Every category except null has a `value` property:
+#### 7.2.3 Summary counts
 
-- Strings and booleans use JSON strings and booleans, respectively.
-- Numbers use JSON strings retaining their original lexical text, including
-  decimal places and exponent notation.
-- Arrays contain an array of source-value objects, each with its own category.
-  Objects map member names to source-value objects in the same way.
+The summary records the outcome of the comparison as a whole. In the example,
+both input records matched by key; none were missing or extra. The reference
+count equals matched plus missing, and the query count equals matched plus
+extra.
 
-Within `canonical`, `logical_type` is `string`, `integer`, `decimal`, `boolean`,
-`date`, `datetime`, `list`, `set`, or `multiset`. Every canonical value has a
-`value` property; collections also have `element_type`.
+There are two in-scope non-key value opportunities, one measurement for each
+sample. `S1` contributes one match and `S2` one mismatch. Key fields do not
+contribute to these counts. Every opportunity is counted exactly once as
+`matched`, `mismatched`, or `not_assessable`; all counts are non-negative.
 
-| Canonical type | Encoding of `value` |
+`summary.findings` groups the individual findings. A single finding contributes once
+to each grouping. `by_classification` always includes both classifications,
+`by_code` all eight codes from [Section 3.2.3](#323-findings-classifications-and-codes),
+and `by_review_priority` includes `low`, `normal`, `high`, and `unassigned`.
+Zero entries remain present; each grouping sums to `total`.
+
+#### 7.2.4 Findings
+
+`findings` is an array: each entry describes one comparison difference or
+assessment issue. The example has one entry. It identifies a `value_mismatch`
+in the values phase, affecting both sides, with default review priority
+`normal`. The classifications and codes have the meanings explained in
+[Section 3.2.3](#323-findings-classifications-and-codes).
+
+Every finding has `id`, `classification`, `code`, `phase`, `message`, and
+`affected_side` (`reference`, `query`, or `both`, as allowed for its code).
+The deterministic English message adds no facts beyond the structured
+properties. IDs such as `F000001` are assigned after sorting; they identify
+findings within this report, not across runs.
+
+The record and source locations show where that difference occurred.
+`record_identity` contains ordered reference, query, and canonical key-value
+arrays. Here, all identify `S2`. `field` is the canonical field name, while the
+locations identify the actual source fields: `measurement` and `result`.
+CSV/TSV `record_number` and starting physical `line_number` are one-based;
+the header explains why record 2 starts on line 3. Tabular locations may include
+a `field`; JSON locations instead use an RFC 6901 `json_pointer`.
+
+The `values` object explains what was compared. Each side has a presence `state`,
+a `source` representation, and, for this typed field, a translated `canonical`
+representation. CSV source values are strings. The canonical decimal strings
+`"2"` and `"2.1"` represent the unequal numbers 2 and 2.1; numeric values are
+encoded as strings to preserve precision. Comparator parameters and processing rules
+remain in the saved configuration.
+
+`present` means the source field exists, not that translation succeeded or the
+value is non-null. `absent` means the field or its record is missing and carries
+no `source` or `canonical`. A present side may also contain only its state if
+its value is not needed to explain the finding.
+
+Other findings retain only the context and evidence they need:
+
+| Finding form | Record/field context and value evidence |
 | --- | --- |
-| `string` | JSON string containing the processed text. |
-| `integer` | JSON string of ordinary base-10 text, without a leading plus or redundant zeros. |
-| `decimal` | JSON string in the normalized decimal form described below. |
-| `boolean` | JSON boolean. |
-| `date` | JSON string in `YYYY-MM-DD` form. |
-| `datetime` | JSON string in UTC, ending in `Z`, with redundant fractional zeros removed. |
-| `list`, `set`, `multiset` | JSON array of canonical element values, encoded according to `element_type`, without per-element type wrappers. Lists retain order. Sets and multisets use Unicode code-point order of the canonical element strings; multiset duplicates are retained. |
+| `missing_record`, `extra_record` | Record identity and locations; the absent record's side is null. No `field`, `review_priority`, or `values`. |
+| Record-specific `missing_required_field` | Identity, locations, field, and priority; `values` contains only both presence states. An absent field's location points to its containing record. |
+| Zero-record dataset-level `missing_required_field` | Only field and priority beyond the common properties; no individual record, location, or `values`. |
+| `type_mismatch`, `invalid_field_value`, `mapping_failure` | Identity, locations, field, and priority; both presence states and the affected side's source value, without a canonical value. |
+| `null_policy_violation` | The same context and presence states, with the affected source value and, for a typed field, canonical null. |
+| `value_mismatch` | Identity, locations, field, and priority; source values for present sides and canonical values for typed present sides. Untyped `preserved_exact` fields have no canonical value. |
 
-For every declared type, canonical null uses JSON null instead of the usual
-`value` encoding. A null collection still includes `element_type`.
+Independent contract violations on the two sides produce separate findings;
+a value mismatch produces one finding with side `both`. Category incompatibility,
+invalid content within an accepted category, and valid unequal values produce
+`type_mismatch`, `invalid_field_value`, and `value_mismatch`, respectively,
+rather than overlapping findings for the same affected value. Untyped category
+differences are value mismatches. There is no additional `not_assessable`
+finding: the causal assessment issue explains the blocked opportunity.
 
-Canonical decimals use `"0"` for all zero values, including negative zero.
-Non-zero decimals use one non-zero digit before the decimal point, no trailing
-fractional zeros, lowercase `e`, and no redundant exponent sign or zeros;
-exponent zero is omitted. For example, `12.30`, `1000`, and `0.0010` become
-`"1.23e1"`, `"1e3"`, and `"1e-3"`.
+#### 7.2.5 Exclusions
 
-##### Finding order and identifiers
+The small example has `"exclusions": []`: every source field is declared and
+in scope. The [richer custom example](#52-runnable-custom-example-with-transformations)
+shows both exclusion forms. Its array includes entries such as:
 
-Findings use the following total order, independent of locale:
+```json
+{
+  "exclusions": [
+    {"code": "configured_field_excluded", "canonical_field": "curator_note"},
+    {
+      "code": "undeclared_field_excluded",
+      "side": "query",
+      "source_field": "pipeline_version",
+      "record_count": 2
+    }
+  ]
+}
+```
+
+A configured exclusion names its `canonical_field`. An undeclared exclusion
+names its `side` and `source_field`; `record_count` is the non-negative number
+of records containing it, including zero for a field exposed only by a header
+in an empty dataset. Exclusions are not findings and do not affect run status.
+
+Configured exclusions come first, sorted by canonical field name. Undeclared
+exclusions follow, sorted by side (`reference`, then `query`) and source field
+name. Field-name sorting uses Unicode code-point order.
+
+#### 7.2.6 Encoding and ordering details
+
+These conventions apply when reading values beyond the decimal example above:
+
+| Representation | Encoding |
+| --- | --- |
+| Source scalar | `category` is `string`, `integer`, `decimal`, `boolean`, or `null`. Strings and booleans use JSON strings and booleans. Numbers use JSON strings retaining their original lexical text, including decimal places and exponent notation. Native null has no `value` property. |
+| Source collection | `category` is `array` or `object`. Its `value` is an array of source-value objects, or an object mapping member names to source-value objects. Each nested value carries its own category. |
+| Canonical scalar | `logical_type` declares the type. Strings contain processed text; booleans use JSON booleans. Integers, decimals, dates, and datetimes use JSON strings in the forms below. |
+| Canonical collection | `logical_type` is `list`, `set`, or `multiset`, with `element_type`. `value` is an array of canonical elements without per-element type wrappers. Lists retain order; sets and multisets sort by Unicode code-point order of canonical element strings, retaining multiset duplicates. |
+| Canonical null | The declared logical type with `"value": null`; a null collection still has `element_type`. A present null is distinct from an absent field. |
+
+Canonical integers use base-10 text without a leading plus or redundant zeros.
+Canonical decimals use `"0"` for every zero, including negative zero; non-zero
+values use one non-zero digit before the decimal point, no trailing fractional
+zeros, lowercase `e`, and no redundant exponent sign or zeros. Exponent zero
+is omitted: `12.30`, `1000`, and `0.0010` become `"1.23e1"`, `"1e3"`, and
+`"1e-3"`. Dates use `YYYY-MM-DD`; datetimes use UTC ending in `Z`, with redundant
+fractional zeros removed.
+
+Findings have a total order, independent of locale:
 
 1. Classification: `comparison_difference`, then `assessment_issue`.
 2. Phase: `contract`, `records`, then `values`.
@@ -1424,10 +1404,8 @@ Findings use the following total order, independent of locale:
 9. Canonical JSON serialization of remaining structured properties, excluding
    `id` and `message`.
 
-Candidates identical under this ordering key are combined into a single
-finding. The sorted findings receive IDs `F000001`, `F000002`, and so on. These
-IDs are local to the result rather than persistent identifiers between
-comparisons.
+Candidates identical under that key are combined into one finding. Sorted
+findings receive IDs `F000001`, `F000002`, and so on.
 
 ## 8. Errors and corrective action
 
