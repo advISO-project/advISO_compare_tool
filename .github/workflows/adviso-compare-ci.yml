@@ -1,0 +1,210 @@
+# Copyright (C) 2026 Cardiff University, the Wellcome Sanger Institute and
+# the University of the Western Cape
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: adviso-compare CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    name: adviso-compare / Ruff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+    steps:
+      - name: Check out source and version history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.11'
+
+      - name: Install package and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install '.[dev]'
+          python -m pip check
+
+      - name: Record quality-check environment
+        run: |
+          mkdir -p ci-output/quality
+          python --version > ci-output/quality/python.txt
+          python -c "import platform; print(platform.platform()); print(platform.machine())" > ci-output/quality/platform.txt
+          git rev-parse HEAD > ci-output/quality/commit.txt
+          python -m pip list --format=freeze > ci-output/quality/test-dependencies.txt
+          python -m ruff --version > ci-output/quality/ruff-version.txt
+
+      - name: Check Python formatting
+        run: |
+          python -m ruff format --check . | tee ci-output/quality/format.txt
+
+      - name: Check Python lint rules
+        run: |
+          python -m ruff check . | tee ci-output/quality/lint.txt
+
+      - name: Test draft-release preparation
+        run: >-
+          python -m pytest .github/scripts/test_adviso_compare_release.py -q
+          --junitxml=ci-output/quality/release-tests.xml
+
+      - name: Retain quality-check evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: adviso-compare-quality
+          retention-days: 30
+          overwrite: true
+          if-no-files-found: warn
+          path: ci-output/quality/*
+
+  test:
+    name: adviso-compare / ${{ matrix.os }} / Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            python: '3.10'
+          - os: ubuntu-24.04
+            python: '3.11'
+          - os: ubuntu-24.04
+            python: '3.12'
+          - os: ubuntu-24.04
+            python: '3.13'
+          - os: ubuntu-24.04
+            python: '3.14'
+          - os: ubuntu-24.04
+            python: '3.15'
+          - os: macos-15
+            python: '3.10'
+          - os: windows-2025
+            python: '3.10'
+    defaults:
+      run:
+        shell: bash
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+    steps:
+      - name: Check out source and version history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install package and development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install '.[dev]'
+          python -m pip check
+
+      - name: Record verification environment
+        run: |
+          mkdir -p ci-output
+          python --version > ci-output/python.txt
+          python -c "import platform; print(platform.platform()); print(platform.machine())" > ci-output/platform.txt
+          git rev-parse HEAD > ci-output/commit.txt
+          python -m pip list --format=freeze > ci-output/test-dependencies.txt
+
+      - name: Run suite, builds, and clean installation scenarios
+        run: >-
+          python -m pytest tests -q
+          --junitxml=ci-output/tests.xml
+          --basetemp=ci-output/tmp
+
+      - name: Retain test reports, distributions, and dependency records
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: adviso-compare-${{ matrix.os }}-python-${{ matrix.python }}
+          retention-days: 30
+          overwrite: true
+          if-no-files-found: warn
+          path: |
+            ci-output/*.txt
+            ci-output/tests.xml
+            ci-output/tmp/distributions/*
+
+  ci:
+    name: adviso-compare CI passed
+    needs: [test, quality]
+    if: always()
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Require every test job and Ruff to succeed
+        env:
+          MATRIX_RESULT: ${{ needs.test.result }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+        run: |
+          test "$MATRIX_RESULT" = success
+          test "$QUALITY_RESULT" = success
+
+  release:
+    name: adviso-compare / Prepare draft release
+    needs: [test, quality, ci]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out source and version history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require source merged to main
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+      - name: Select Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.11'
+
+      - name: Install release-preparation dependencies
+        run: python -m pip install '.[dev]'
+
+      - name: Assemble verified files and create or refresh the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_RESULTS: ${{ toJSON(needs) }}
+        run: >-
+          python .github/scripts/adviso_compare_release.py
+          --inputs ci-output/release-input
+          --output ci-output/release-candidate

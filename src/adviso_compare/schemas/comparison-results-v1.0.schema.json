@@ -1,0 +1,1514 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://adviso-project.github.io/advISO_compare_tool/schemas/comparison-results-v1.0.schema.json",
+  "title": "adviso-compare results",
+  "description": "Normative schema for canonical comparison results schema version 1.0. Execution-error diagnostics are not comparison results and do not validate against this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run",
+    "phases",
+    "software",
+    "runtime",
+    "inputs",
+    "record_key_fields",
+    "comparison_configuration_digest",
+    "summary",
+    "exclusions",
+    "findings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "run": {
+      "$ref": "#/$defs/run"
+    },
+    "phases": {
+      "$ref": "#/$defs/phases"
+    },
+    "software": {
+      "$ref": "#/$defs/software"
+    },
+    "runtime": {
+      "$ref": "#/$defs/runtime"
+    },
+    "inputs": {
+      "$ref": "#/$defs/inputs"
+    },
+    "record_key_fields": {
+      "$ref": "#/$defs/recordKeyFields"
+    },
+    "comparison_configuration_digest": {
+      "$ref": "#/$defs/sha256Digest"
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    },
+    "exclusions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/exclusion"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    }
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "phaseStatus": {
+      "enum": [
+        "complete",
+        "incomplete"
+      ]
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "completed_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "status": {
+          "$ref": "#/$defs/phaseStatus"
+        },
+        "completed_at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+        }
+      }
+    },
+    "phases": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "records",
+        "values"
+      ],
+      "properties": {
+        "contract": {
+          "$ref": "#/$defs/phaseStatus"
+        },
+        "records": {
+          "$ref": "#/$defs/phaseStatus"
+        },
+        "values": {
+          "$ref": "#/$defs/phaseStatus"
+        }
+      }
+    },
+    "software": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "const": "adviso-compare"
+        },
+        "version": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "build": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "python",
+        "platform",
+        "unicode_version"
+      ],
+      "properties": {
+        "python": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*-[0-9]+\\.[0-9]+\\.[0-9]+(?:[a-z]+[0-9]+)?$"
+        },
+        "platform": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*-[a-z0-9_]+$"
+        },
+        "unicode_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        }
+      }
+    },
+    "sha256Digest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm",
+        "value"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64,
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basename",
+        "format",
+        "encoding",
+        "size_bytes",
+        "digest"
+      ],
+      "properties": {
+        "basename": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "format": {
+          "enum": [
+            "csv",
+            "tsv",
+            "json"
+          ]
+        },
+        "encoding": {
+          "const": "utf-8"
+        },
+        "size_bytes": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "digest": {
+          "$ref": "#/$defs/sha256Digest"
+        }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "query"
+      ],
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/input"
+        },
+        "query": {
+          "$ref": "#/$defs/input"
+        }
+      }
+    },
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "recordKeyFields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "query",
+        "canonical"
+      ],
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "query": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "canonical": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    },
+    "recordSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "query",
+        "matched",
+        "missing",
+        "extra"
+      ],
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "query": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "matched": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "missing": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "extra": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      }
+    },
+    "valueSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "matched",
+        "mismatched",
+        "not_assessable"
+      ],
+      "properties": {
+        "matched": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "mismatched": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "not_assessable": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      }
+    },
+    "findingCountsByCode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "missing_record",
+        "extra_record",
+        "missing_required_field",
+        "type_mismatch",
+        "invalid_field_value",
+        "null_policy_violation",
+        "mapping_failure",
+        "value_mismatch"
+      ],
+      "properties": {
+        "missing_record": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "extra_record": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "missing_required_field": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "type_mismatch": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "invalid_field_value": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "null_policy_violation": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "mapping_failure": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "value_mismatch": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      }
+    },
+    "findingCountsByClassification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparison_difference",
+        "assessment_issue"
+      ],
+      "properties": {
+        "comparison_difference": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "assessment_issue": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      }
+    },
+    "findingCountsByReviewPriority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "low",
+        "normal",
+        "high",
+        "unassigned"
+      ],
+      "properties": {
+        "low": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "normal": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "high": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "unassigned": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        }
+      }
+    },
+    "findingSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "by_classification",
+        "by_code",
+        "by_review_priority"
+      ],
+      "properties": {
+        "total": {
+          "$ref": "#/$defs/nonNegativeInteger"
+        },
+        "by_classification": {
+          "$ref": "#/$defs/findingCountsByClassification"
+        },
+        "by_code": {
+          "$ref": "#/$defs/findingCountsByCode"
+        },
+        "by_review_priority": {
+          "$ref": "#/$defs/findingCountsByReviewPriority"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "records",
+        "values",
+        "findings"
+      ],
+      "properties": {
+        "records": {
+          "$ref": "#/$defs/recordSummary"
+        },
+        "values": {
+          "$ref": "#/$defs/valueSummary"
+        },
+        "findings": {
+          "$ref": "#/$defs/findingSummary"
+        }
+      }
+    },
+    "exclusion": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "canonical_field"
+          ],
+          "properties": {
+            "code": {
+              "const": "configured_field_excluded"
+            },
+            "canonical_field": {
+              "$ref": "#/$defs/nonEmptyString"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "code",
+            "side",
+            "source_field",
+            "record_count"
+          ],
+          "properties": {
+            "code": {
+              "const": "undeclared_field_excluded"
+            },
+            "side": {
+              "enum": [
+                "reference",
+                "query"
+              ]
+            },
+            "source_field": {
+              "$ref": "#/$defs/nonEmptyString"
+            },
+            "record_count": {
+              "$ref": "#/$defs/nonNegativeInteger"
+            }
+          }
+        }
+      ]
+    },
+    "recordIdentityValues": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    },
+    "nullableRecordIdentityValues": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/recordIdentityValues"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "recordIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "query",
+        "canonical"
+      ],
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/nullableRecordIdentityValues"
+        },
+        "query": {
+          "$ref": "#/$defs/nullableRecordIdentityValues"
+        },
+        "canonical": {
+          "$ref": "#/$defs/recordIdentityValues"
+        }
+      }
+    },
+    "tabularSourceLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_number",
+        "line_number"
+      ],
+      "properties": {
+        "record_number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "line_number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "field": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      }
+    },
+    "jsonSourceLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "json_pointer"
+      ],
+      "properties": {
+        "json_pointer": {
+          "type": "string",
+          "pattern": "^(?:/(?:[^~/]|~[01])*)*$"
+        }
+      }
+    },
+    "sourceLocation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/tabularSourceLocation"
+        },
+        {
+          "$ref": "#/$defs/jsonSourceLocation"
+        }
+      ]
+    },
+    "nullableSourceLocation": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/sourceLocation"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sourceLocations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "query"
+      ],
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/nullableSourceLocation"
+        },
+        "query": {
+          "$ref": "#/$defs/nullableSourceLocation"
+        }
+      }
+    },
+    "sourceValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "category",
+            "value"
+          ],
+          "properties": {
+            "category": {
+              "const": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "category",
+            "value"
+          ],
+          "properties": {
+            "category": {
+              "const": "integer"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^-?(?:0|[1-9][0-9]*)$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "category",
+            "value"
+          ],
+          "properties": {
+            "category": {
+              "const": "decimal"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^-?(?:0|[1-9][0-9]*)(?:(?:\\.[0-9]+)(?:[eE][+-]?[0-9]+)?|[eE][+-]?[0-9]+)$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "category",
+            "value"
+          ],
+          "properties": {
+            "category": {
+              "const": "boolean"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "category"
+          ],
+          "properties": {
+            "category": {
+              "const": "null"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "category",
+            "value"
+          ],
+          "properties": {
+            "category": {
+              "const": "array"
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/sourceValue"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "category",
+            "value"
+          ],
+          "properties": {
+            "category": {
+              "const": "object"
+            },
+            "value": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/$defs/sourceValue"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "canonicalIntegerText": {
+      "type": "string",
+      "pattern": "^(?:0|-[1-9][0-9]*|[1-9][0-9]*)$"
+    },
+    "canonicalDecimalText": {
+      "type": "string",
+      "pattern": "^(?:0|-?[1-9](?:\\.[0-9]*[1-9])?(?:e-?[1-9][0-9]*)?)$"
+    },
+    "canonicalValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "logical_type",
+            "value"
+          ],
+          "properties": {
+            "logical_type": {
+              "const": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "logical_type",
+            "value"
+          ],
+          "properties": {
+            "logical_type": {
+              "const": "integer"
+            },
+            "value": {
+              "$ref": "#/$defs/canonicalIntegerText"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "logical_type",
+            "value"
+          ],
+          "properties": {
+            "logical_type": {
+              "const": "decimal"
+            },
+            "value": {
+              "$ref": "#/$defs/canonicalDecimalText"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "logical_type",
+            "value"
+          ],
+          "properties": {
+            "logical_type": {
+              "const": "boolean"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "logical_type",
+            "value"
+          ],
+          "properties": {
+            "logical_type": {
+              "const": "date"
+            },
+            "value": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "logical_type",
+            "value"
+          ],
+          "properties": {
+            "logical_type": {
+              "const": "datetime"
+            },
+            "value": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]*[1-9])?Z$"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "logical_type",
+            "value"
+          ],
+          "properties": {
+            "logical_type": {
+              "enum": [
+                "string",
+                "integer",
+                "decimal",
+                "boolean",
+                "date",
+                "datetime"
+              ]
+            },
+            "value": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "$ref": "#/$defs/canonicalCollectionValue"
+        }
+      ]
+    },
+    "canonicalCollectionValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "logical_type",
+        "element_type",
+        "value"
+      ],
+      "properties": {
+        "logical_type": {
+          "enum": [
+            "list",
+            "set",
+            "multiset"
+          ]
+        },
+        "element_type": {
+          "enum": [
+            "string",
+            "integer",
+            "decimal",
+            "boolean",
+            "date",
+            "datetime"
+          ]
+        },
+        "value": {
+          "oneOf": [
+            {
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "element_type": {
+                "const": "boolean"
+              }
+            },
+            "required": [
+              "element_type"
+            ]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "items": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "element_type": {
+                "const": "integer"
+              }
+            },
+            "required": [
+              "element_type"
+            ]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "items": {
+                  "$ref": "#/$defs/canonicalIntegerText"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "element_type": {
+                "const": "decimal"
+              }
+            },
+            "required": [
+              "element_type"
+            ]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "items": {
+                  "$ref": "#/$defs/canonicalDecimalText"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "element_type": {
+                "const": "date"
+              }
+            },
+            "required": [
+              "element_type"
+            ]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "items": {
+                  "type": "string",
+                  "format": "date"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "element_type": {
+                "const": "datetime"
+              }
+            },
+            "required": [
+              "element_type"
+            ]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "items": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]*[1-9])?Z$"
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "logical_type": {
+                "const": "set"
+              },
+              "value": {
+                "type": "array"
+              }
+            },
+            "required": [
+              "logical_type",
+              "value"
+            ]
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "uniqueItems": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    "fieldEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "present",
+            "absent"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/sourceValue"
+        },
+        "canonical": {
+          "$ref": "#/$defs/canonicalValue"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "absent"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "source": false,
+              "canonical": false
+            }
+          }
+        }
+      ]
+    },
+    "findingValues": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference",
+        "query"
+      ],
+      "properties": {
+        "reference": {
+          "$ref": "#/$defs/fieldEvidence"
+        },
+        "query": {
+          "$ref": "#/$defs/fieldEvidence"
+        }
+      }
+    },
+    "finding": {
+      "oneOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/findingShape"
+            },
+            {
+              "properties": {
+                "code": {
+                  "const": "missing_record"
+                }
+              },
+              "required": [
+                "code"
+              ],
+              "not": {
+                "anyOf": [
+                  { "required": ["field"] },
+                  { "required": ["review_priority"] },
+                  { "required": ["values"] }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/findingShape"
+            },
+            {
+              "properties": {
+                "code": {
+                  "const": "extra_record"
+                }
+              },
+              "required": [
+                "code"
+              ],
+              "not": {
+                "anyOf": [
+                  { "required": ["field"] },
+                  { "required": ["review_priority"] },
+                  { "required": ["values"] }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/findingShape"
+            },
+            {
+              "properties": {
+                "code": {
+                  "const": "missing_required_field"
+                }
+              },
+              "required": [
+                "code",
+                "record_identity",
+                "source_locations",
+                "field",
+                "review_priority",
+                "values"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/findingShape"
+            },
+            {
+              "properties": {
+                "code": {
+                  "const": "missing_required_field"
+                }
+              },
+              "required": [
+                "code",
+                "field",
+                "review_priority"
+              ],
+              "not": {
+                "anyOf": [
+                  { "required": ["record_identity"] },
+                  { "required": ["source_locations"] },
+                  { "required": ["values"] }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/findingShape"
+            },
+            {
+              "properties": {
+                "code": {
+                  "enum": [
+                    "type_mismatch",
+                    "invalid_field_value",
+                    "null_policy_violation",
+                    "mapping_failure"
+                  ]
+                }
+              },
+              "required": [
+                "code",
+                "record_identity",
+                "source_locations",
+                "field",
+                "review_priority",
+                "values"
+              ]
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/findingShape"
+            },
+            {
+              "properties": {
+                "code": {
+                  "const": "value_mismatch"
+                }
+              },
+              "required": [
+                "code",
+                "record_identity",
+                "source_locations",
+                "field",
+                "review_priority",
+                "values"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "findingShape": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "classification",
+        "code",
+        "phase",
+        "message",
+        "affected_side"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^F[0-9]{6,}$"
+        },
+        "classification": {
+          "enum": [
+            "comparison_difference",
+            "assessment_issue"
+          ]
+        },
+        "code": {
+          "enum": [
+            "missing_record",
+            "extra_record",
+            "missing_required_field",
+            "type_mismatch",
+            "invalid_field_value",
+            "null_policy_violation",
+            "mapping_failure",
+            "value_mismatch"
+          ]
+        },
+        "phase": {
+          "enum": [
+            "contract",
+            "records",
+            "values"
+          ]
+        },
+        "message": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "affected_side": {
+          "enum": [
+            "reference",
+            "query",
+            "both"
+          ]
+        },
+        "record_identity": {
+          "$ref": "#/$defs/recordIdentity"
+        },
+        "source_locations": {
+          "$ref": "#/$defs/sourceLocations"
+        },
+        "field": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "review_priority": {
+          "enum": [
+            "low",
+            "normal",
+            "high"
+          ]
+        },
+        "values": {
+          "$ref": "#/$defs/findingValues"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "missing_record"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "required": [
+              "record_identity",
+              "source_locations"
+            ],
+            "properties": {
+              "classification": {
+                "const": "comparison_difference"
+              },
+              "phase": {
+                "const": "records"
+              },
+              "affected_side": {
+                "const": "query"
+              },
+              "record_identity": {
+                "properties": {
+                  "reference": {
+                    "$ref": "#/$defs/recordIdentityValues"
+                  },
+                  "query": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "extra_record"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "required": [
+              "record_identity",
+              "source_locations"
+            ],
+            "properties": {
+              "classification": {
+                "const": "comparison_difference"
+              },
+              "phase": {
+                "const": "records"
+              },
+              "affected_side": {
+                "const": "reference"
+              },
+              "record_identity": {
+                "properties": {
+                  "reference": {
+                    "type": "null"
+                  },
+                  "query": {
+                    "$ref": "#/$defs/recordIdentityValues"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "enum": [
+                  "type_mismatch",
+                  "invalid_field_value",
+                  "null_policy_violation",
+                  "mapping_failure"
+                ]
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "required": [
+              "record_identity",
+              "source_locations",
+              "field",
+              "review_priority",
+              "values"
+            ],
+            "properties": {
+              "classification": {
+                "const": "assessment_issue"
+              },
+              "phase": {
+                "const": "contract"
+              },
+              "affected_side": {
+                "enum": [
+                  "reference",
+                  "query"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "missing_required_field"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "required": [
+              "field",
+              "review_priority"
+            ],
+            "properties": {
+              "classification": {
+                "const": "assessment_issue"
+              },
+              "phase": {
+                "const": "contract"
+              },
+              "affected_side": {
+                "enum": [
+                  "reference",
+                  "query"
+                ]
+              }
+            },
+            "oneOf": [
+              {
+                "required": [
+                  "record_identity",
+                  "source_locations",
+                  "values"
+                ]
+              },
+              {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "record_identity"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "source_locations"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "values"
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "value_mismatch"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "required": [
+              "record_identity",
+              "source_locations",
+              "field",
+              "review_priority",
+              "values"
+            ],
+            "properties": {
+              "classification": {
+                "const": "comparison_difference"
+              },
+              "phase": {
+                "const": "values"
+              },
+              "affected_side": {
+                "const": "both"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
